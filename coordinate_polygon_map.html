@@ -1,0 +1,2318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hybrid Coordinate Field Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #66758b;
+      --line: #d8e0ea;
+      --panel: #ffffff;
+      --soft: #f4f7fb;
+      --blue: #1d4ed8;
+      --blue-soft: #eaf1ff;
+      --green: #15803d;
+      --amber: #b45309;
+      --red: #b91c1c;
+      --dark: #101827;
+      --shadow: 0 18px 45px rgba(16, 24, 39, 0.18);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--soft);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: relative;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      position: relative;
+      padding: 18px 18px 14px;
+      color: #fff;
+      background: linear-gradient(135deg, #10233f, #164e63);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 7px 0 0;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .close-sidebar {
+      display: none;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      min-height: 30px;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 50%;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcff;
+    }
+
+    .stat {
+      min-height: 62px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .stat span {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 17px;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 12px 18px 0;
+      background: #fff;
+    }
+
+    .tab {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      color: var(--blue);
+      border-color: #b8cbff;
+      background: var(--blue-soft);
+    }
+
+    .content {
+      flex: 1;
+      overflow: auto;
+      padding: 16px 18px 20px;
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    h2 {
+      margin: 6px 0 12px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .block {
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    input,
+    select,
+    button,
+    textarea {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+      padding: 8px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    button {
+      border: 0;
+      padding: 9px 12px;
+      color: #fff;
+      font-weight: 700;
+      background: var(--blue);
+      cursor: pointer;
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: #e9eef6;
+    }
+
+    button.green {
+      background: var(--green);
+    }
+
+    button.amber {
+      background: var(--amber);
+    }
+
+    button.red {
+      background: var(--red);
+    }
+
+    button.translucent {
+      opacity: 0.75;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .grid3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .notice {
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #eef4ff;
+      color: #1e3a8a;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .notice.error {
+      background: #fff1f2;
+      color: #991b1b;
+    }
+
+    .notice.good {
+      background: #ecfdf3;
+      color: #166534;
+    }
+
+    .point-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .point-card {
+      display: grid;
+      grid-template-columns: 30px 1fr 42px;
+      gap: 9px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .point-card.selected {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+
+    .badge {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .point-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .point-meta {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .tiny {
+      min-height: 28px;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .map-wrap {
+      position: relative;
+      min-width: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100vh;
+      min-height: 680px;
+      background: #d7e2ec;
+    }
+
+    .map-tools {
+      position: absolute;
+      right: 16px;
+      bottom: 18px;
+      z-index: 900;
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.18);
+      box-shadow: none;
+    }
+
+    .map-tools button {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      min-height: 42px;
+      padding: 0;
+      border: 1px solid rgba(15, 23, 42, 0.16);
+      border-radius: 50%;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 7px 18px rgba(15, 23, 42, 0.22);
+    }
+
+    .map-tools button.active {
+      color: #fff;
+      background: rgba(29, 78, 216, 0.75);
+    }
+
+    .map-tools svg {
+      width: 21px;
+      height: 21px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .mobile-tools-toggle {
+      display: none;
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 1200;
+      width: auto;
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      border-radius: 6px;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.2);
+    }
+
+    .sidebar-backdrop {
+      display: none;
+    }
+
+    .join-banner {
+      position: absolute;
+      left: 50%;
+      top: 16px;
+      z-index: 901;
+      display: none;
+      transform: translateX(-50%);
+      max-width: min(560px, calc(100vw - 460px));
+      padding: 10px 14px;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius);
+      background: #fffbeb;
+      color: #92400e;
+      box-shadow: 0 10px 28px rgba(16, 24, 39, 0.16);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .join-banner.active {
+      display: block;
+    }
+
+    .leaflet-popup-content {
+      min-width: 170px;
+    }
+
+    .point-label {
+      border: 1px solid rgba(15, 23, 42, 0.24);
+      border-radius: 5px;
+      padding: 3px 7px;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .area-label {
+      border: 1px solid rgba(21, 128, 61, 0.34);
+      border-radius: 6px;
+      padding: 5px 9px;
+      color: #064e3b;
+      background: rgba(236, 253, 245, 0.96);
+      box-shadow: 0 5px 14px rgba(15, 23, 42, 0.2);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.1;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .polygon-name-label {
+      border-color: rgba(29, 78, 216, 0.34);
+      color: #1e3a8a;
+      background: rgba(239, 246, 255, 0.96);
+    }
+
+    .popup-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: min(340px, 84vw);
+        height: 100vh;
+        max-height: 100vh;
+        border-right: 1px solid var(--line);
+        background: #f8fafc;
+        overflow: auto;
+        transform: translateX(-105%);
+        transition: transform 180ms ease;
+      }
+
+      body.sidebar-open .sidebar {
+        transform: translateX(0);
+      }
+
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: none;
+        background: rgba(15, 23, 42, 0.42);
+      }
+
+      body.sidebar-open .sidebar-backdrop {
+        display: block;
+      }
+
+      .mobile-tools-toggle {
+        display: block;
+      }
+
+      #map {
+        height: 100vh;
+        min-height: 560px;
+      }
+
+      .join-banner {
+        left: 50%;
+        max-width: calc(100vw - 30px);
+        top: 62px;
+        transform: translateX(-50%);
+      }
+
+      .brand {
+        padding: 10px 46px 9px 10px;
+        background: linear-gradient(135deg, #0f2a3f, #14532d);
+      }
+
+      .brand h1 {
+        font-size: 14px;
+        line-height: 1.15;
+        padding-right: 0;
+      }
+
+      .brand p {
+        display: none;
+      }
+
+      .close-sidebar {
+        top: 8px;
+        right: 9px;
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        min-height: 32px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.64);
+        border-radius: 50%;
+        color: #fff;
+        background: rgba(15, 23, 42, 0.72);
+        box-shadow: 0 5px 14px rgba(15, 23, 42, 0.28);
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        padding: 7px 8px;
+        background: #f8fafc;
+      }
+
+      .stat {
+        min-height: 38px;
+        padding: 5px 6px;
+        border-radius: 6px;
+      }
+
+      .stat span {
+        font-size: 8px;
+      }
+
+      .stat strong {
+        margin-top: 3px;
+        font-size: 11px;
+      }
+
+      .tabs {
+        grid-template-columns: repeat(3, 1fr);
+        padding: 7px 8px 0;
+      }
+
+      .content {
+        padding: 8px 8px 12px;
+      }
+
+      .tabs {
+        gap: 4px;
+      }
+
+      .tab {
+        min-height: 28px;
+        border-radius: 5px;
+        font-size: 10px;
+      }
+
+      h2 {
+        margin: 4px 0 8px;
+        font-size: 12px;
+      }
+
+      .block {
+        margin-bottom: 8px;
+        padding: 7px;
+        border-radius: 6px;
+      }
+
+      label {
+        margin: 7px 0 3px;
+        font-size: 9px;
+      }
+
+      input,
+      select,
+      button,
+      textarea {
+        min-height: 29px;
+        padding: 4px 6px;
+        border-radius: 5px;
+        font-size: 10px;
+      }
+
+      .grid2,
+      .grid3,
+      .button-row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .button-row {
+        margin-top: 8px;
+      }
+
+      textarea {
+        min-height: 62px;
+      }
+
+      .notice,
+      .point-meta {
+        font-size: 10px;
+      }
+
+      .notice {
+        padding: 7px 8px;
+      }
+
+      .point-list {
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .point-card {
+        grid-template-columns: 22px minmax(0, 1fr) 30px;
+        gap: 6px;
+        padding: 5px;
+        border-radius: 6px;
+      }
+
+      .badge {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+      }
+
+      .point-name {
+        font-size: 10px;
+      }
+
+      .tiny {
+        min-height: 24px;
+        padding: 3px;
+        font-size: 10px;
+      }
+
+      .map-tools {
+        display: none;
+      }
+
+      .map-tools button {
+        width: 36px;
+        height: 36px;
+        min-height: 36px;
+      }
+
+      .map-tools svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .join-banner {
+        left: 50%;
+        max-width: calc(100vw - 24px);
+      }
+
+      .sidebar {
+        width: min(310px, 88vw);
+      }
+
+      .content {
+        padding: 7px 6px 10px;
+      }
+
+      .point-card {
+        grid-template-columns: 22px minmax(0, 1fr) 28px;
+        padding: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+    <aside class="sidebar">
+      <header class="brand">
+        <button id="closeSidebarBtn" class="close-sidebar" type="button" aria-label="Close tools">×</button>
+        <h1>Hybrid Coordinate Field Map</h1>
+        <p>Import coordinates, inspect field imagery, connect selected points, and calculate area.</p>
+      </header>
+
+      <section class="stats">
+        <div class="stat">
+          <span>Points</span>
+          <strong id="pointCount">0</strong>
+        </div>
+        <div class="stat">
+          <span>Selected</span>
+          <strong id="joinCount">0</strong>
+        </div>
+        <div class="stat">
+          <span>Area</span>
+          <strong id="areaValue">0 acres</strong>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="Tools">
+        <button class="tab active" data-panel="importPanel" type="button">Import</button>
+        <button class="tab" data-panel="addPanel" type="button">Add</button>
+        <button class="tab" data-panel="polygonPanel" type="button">Polygon</button>
+      </nav>
+
+      <div class="content">
+        <section id="importPanel" class="panel active">
+          <h2>Import Coordinates</h2>
+          <div class="block">
+            <label for="sourceFile">CSV, Excel, or PDF</label>
+            <input id="sourceFile" type="file" accept=".csv,.txt,.xlsx,.xls,.pdf,text/csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+
+            <div class="grid2">
+              <div>
+                <label for="importMode">Coordinate source</label>
+                <select id="importMode">
+                  <option value="auto">Auto detect</option>
+                  <option value="latlon">Lat / Lon</option>
+                  <option value="utm">UTM N / E</option>
+                </select>
+              </div>
+              <div>
+                <label for="importZone">UTM zone</label>
+                <input id="importZone" type="number" min="1" max="60" value="44">
+              </div>
+            </div>
+
+            <label for="importHemisphere">Hemisphere</label>
+            <select id="importHemisphere">
+              <option value="N">North</option>
+              <option value="S">South</option>
+            </select>
+
+            <div class="button-row">
+              <button id="importBtn" type="button">Read File</button>
+              <button id="sampleBtn" class="secondary" type="button">Load Sample Row</button>
+            </div>
+          </div>
+
+          <div id="importNotice" class="notice">For your Rangareddy CSV, choose Auto detect or Lat / Lon. Use UTM zone 44 North when reading N/E columns.</div>
+        </section>
+
+        <section id="addPanel" class="panel">
+          <h2>Add Point Manually</h2>
+          <div class="block">
+            <label for="pointName">Point name</label>
+            <input id="pointName" type="text" placeholder="P1">
+
+            <label for="manualMode">Input type</label>
+            <select id="manualMode">
+              <option value="latlon">Latitude / Longitude</option>
+              <option value="utm">UTM Northing / Easting</option>
+            </select>
+
+            <div id="latLonFields">
+              <div class="grid2">
+                <div>
+                  <label for="latInput">Latitude</label>
+                  <input id="latInput" type="text" placeholder="16.190204 or 16:11:24.73575">
+                </div>
+                <div>
+                  <label for="lonInput">Longitude</label>
+                  <input id="lonInput" type="text" placeholder="79.720620 or 79:43:14.23323">
+                </div>
+              </div>
+            </div>
+
+            <div id="utmFields" style="display: none;">
+              <div class="grid2">
+                <div>
+                  <label for="northingInput">Northing N</label>
+                  <input id="northingInput" type="number" step="0.001" placeholder="1790400.7045">
+                </div>
+                <div>
+                  <label for="eastingInput">Easting E</label>
+                  <input id="eastingInput" type="number" step="0.001" placeholder="363237.7402">
+                </div>
+              </div>
+              <div class="grid2">
+                <div>
+                  <label for="manualZone">UTM zone</label>
+                  <input id="manualZone" type="number" min="1" max="60" value="44">
+                </div>
+                <div>
+                  <label for="manualHemisphere">Hemisphere</label>
+                  <select id="manualHemisphere">
+                    <option value="N">North</option>
+                    <option value="S">South</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button id="addPointBtn" type="button" style="margin-top: 12px;">Add Point</button>
+          </div>
+        </section>
+
+        <section id="polygonPanel" class="panel">
+          <h2>Manual Polygon Joining</h2>
+          <div class="block">
+            <div id="polygonNotice" class="notice">Start join mode, then click map points in boundary order. The polygon is calculated only from selected points.</div>
+            <label for="areaUnit">Area unit</label>
+            <select id="areaUnit">
+              <option value="acres">Acres</option>
+              <option value="sqm">Square meters</option>
+              <option value="sqft">Square feet</option>
+              <option value="sqyd">Square yards</option>
+              <option value="hectares">Hectares</option>
+            </select>
+            <div class="button-row">
+              <button id="startJoinBtn" class="amber" type="button">Start Join Mode</button>
+              <button id="finishPolygonBtn" class="green" type="button" disabled>Finish Polygon</button>
+            </div>
+            <div class="grid3" style="margin-top: 10px;">
+              <button id="undoJoinBtn" class="secondary" type="button" disabled>Undo</button>
+              <button id="clearJoinBtn" class="secondary" type="button">Clear Join</button>
+              <button id="clearAllBtn" class="red" type="button">Clear All</button>
+            </div>
+            <label for="polygonExportFormat">Export polygon</label>
+            <div class="button-row">
+              <select id="polygonExportFormat">
+                <option value="kml">KML</option>
+                <option value="shp">SHP</option>
+                <option value="dxf">DXF</option>
+              </select>
+              <button id="exportPolygonBtn" class="secondary translucent" type="button">Export Polygon</button>
+            </div>
+          </div>
+
+          <div class="block">
+            <label for="selectedOrder">Selected polygon order</label>
+            <textarea id="selectedOrder" readonly placeholder="Selected point names will appear here"></textarea>
+          </div>
+        </section>
+
+        <section class="block">
+          <h2>Point Manager</h2>
+          <div class="button-row">
+            <button id="fitBtn" class="secondary" type="button">Fit Map</button>
+            <button id="exportBtn" class="secondary" type="button">Export CSV</button>
+          </div>
+          <div id="pointList" class="point-list"></div>
+        </section>
+      </div>
+    </aside>
+
+    <section class="map-wrap">
+      <div id="map"></div>
+      <button id="mobileToolsToggle" class="mobile-tools-toggle" type="button">Tools</button>
+      <div id="joinBanner" class="join-banner">Join mode is active. Click points in the exact polygon order.</div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    const map = L.map('map', { zoomControl: false }).setView([16.2, 79.72], 14);
+
+    const imageryLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 20,
+      attribution: 'Tiles &copy; Esri'
+    });
+    const labelsLayer = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 20,
+      attribution: 'Labels &copy; Esri'
+    });
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 22,
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+    const hybridGroup = L.layerGroup([imageryLayer, labelsLayer]).addTo(map);
+
+    const markerLayer = L.layerGroup().addTo(map);
+    let activeBase = 'hybrid';
+    let previewLine = null;
+    let polygonLayer = null;
+    let areaLabel = null;
+    let polygonNameLabel = null;
+    let joinMode = false;
+
+    const state = {
+      points: [],
+      joinOrder: [],
+      areaSqM: 0,
+      polygonName: '',
+      polygonKathaNo: '',
+      polygonSurveyNo: '',
+      polygonRemarks: ''
+    };
+
+    const elements = {
+      pointCount: document.getElementById('pointCount'),
+      joinCount: document.getElementById('joinCount'),
+      areaValue: document.getElementById('areaValue'),
+      sourceFile: document.getElementById('sourceFile'),
+      importMode: document.getElementById('importMode'),
+      importZone: document.getElementById('importZone'),
+      importHemisphere: document.getElementById('importHemisphere'),
+      importNotice: document.getElementById('importNotice'),
+      manualMode: document.getElementById('manualMode'),
+      latLonFields: document.getElementById('latLonFields'),
+      utmFields: document.getElementById('utmFields'),
+      pointList: document.getElementById('pointList'),
+      selectedOrder: document.getElementById('selectedOrder'),
+      areaUnit: document.getElementById('areaUnit'),
+      polygonExportFormat: document.getElementById('polygonExportFormat'),
+      polygonNotice: document.getElementById('polygonNotice'),
+      joinBanner: document.getElementById('joinBanner'),
+      startJoinBtn: document.getElementById('startJoinBtn'),
+      finishPolygonBtn: document.getElementById('finishPolygonBtn'),
+      undoJoinBtn: document.getElementById('undoJoinBtn')
+    };
+
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(item => item.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.panel).classList.add('active');
+      });
+    });
+
+    elements.manualMode.addEventListener('change', () => {
+      const isUtm = elements.manualMode.value === 'utm';
+      elements.latLonFields.style.display = isUtm ? 'none' : 'block';
+      elements.utmFields.style.display = isUtm ? 'block' : 'none';
+    });
+
+    document.getElementById('importBtn').addEventListener('click', importFile);
+    document.getElementById('sampleBtn').addEventListener('click', loadSampleRow);
+    document.getElementById('addPointBtn').addEventListener('click', addManualPoint);
+    document.getElementById('fitBtn').addEventListener('click', fitMap);
+    document.getElementById('exportBtn').addEventListener('click', exportCsv);
+    document.getElementById('exportPolygonBtn').addEventListener('click', exportPolygon);
+    document.getElementById('startJoinBtn').addEventListener('click', toggleJoinMode);
+    document.getElementById('finishPolygonBtn').addEventListener('click', finishPolygon);
+    document.getElementById('undoJoinBtn').addEventListener('click', undoJoin);
+    document.getElementById('clearJoinBtn').addEventListener('click', clearJoin);
+    document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+    document.getElementById('mobileToolsToggle').addEventListener('click', () => document.body.classList.add('sidebar-open'));
+    document.getElementById('sidebarBackdrop').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+    document.getElementById('closeSidebarBtn').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+    elements.areaUnit.addEventListener('change', updateAreaDisplay);
+
+    async function importFile() {
+      const file = elements.sourceFile.files[0];
+      if (!file) {
+        setNotice(elements.importNotice, 'Please choose a CSV, Excel, or PDF file.', 'error');
+        return;
+      }
+
+      try {
+        const extension = file.name.split('.').pop().toLowerCase();
+        let imported = [];
+        if (extension === 'csv' || extension === 'txt') {
+          imported = await importDelimited(file);
+        } else if (extension === 'xlsx' || extension === 'xls') {
+          imported = await importExcel(file);
+        } else if (extension === 'pdf') {
+          imported = await importPdf(file);
+        } else {
+          throw new Error('Unsupported file type. Use CSV, Excel, or PDF.');
+        }
+
+        imported.forEach(addPoint);
+        renderAll();
+        fitMap();
+        setNotice(elements.importNotice, `Imported ${imported.length} point(s) from ${file.name}.`, 'good');
+      } catch (error) {
+        setNotice(elements.importNotice, error.message, 'error');
+      }
+    }
+
+    async function importDelimited(file) {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      return rowsToPoints(rows);
+    }
+
+    async function importExcel(file) {
+      if (!window.XLSX) throw new Error('Excel reader library is not available. Check internet connection.');
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+      return rowsToPoints(rows);
+    }
+
+    async function importPdf(file) {
+      if (!window.pdfjsLib) throw new Error('PDF reader library is not available. Check internet connection.');
+      const data = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data }).promise;
+      const lines = [];
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        lines.push(pageText);
+      }
+
+      const text = lines.join('\n');
+      const pdfTablePoints = extractPdfCoordinateTable(text);
+      if (pdfTablePoints.length) return pdfTablePoints;
+
+      const rows = parseLooseRows(text);
+      let points = [];
+      try {
+        points = rowsToPoints(rows, true);
+      } catch (error) {
+        points = [];
+      }
+      if (!points.length) points = extractCoordinatePairs(text);
+      if (!points.length) throw new Error('No coordinate pairs were found in the PDF text.');
+      return points;
+    }
+
+    function extractPdfCoordinateTable(text) {
+      const points = [];
+      const seen = new Set();
+      const projection = detectUtmProjection(text);
+      const normalized = text
+        .replace(/\r/g, '\n')
+        .replace(/([^\n])\s+(\d{1,4}\s+-?\d{2,3}\.\d{4,})/g, '$1\n$2');
+      const lines = normalized.split('\n').map(line => line.trim()).filter(Boolean);
+
+      lines.forEach(line => {
+        const tablePoint = parseLpmPdfLine(line, projection, points.length);
+        if (tablePoint) {
+          addPdfTablePoint(points, seen, tablePoint.name, tablePoint.lat, tablePoint.lon, tablePoint.easting, tablePoint.northing);
+          return;
+        }
+
+        const values = line.match(/-?\d+(?:\.\d+)?/g);
+        if (!values || values.length < 4) return;
+
+        for (let index = 0; index < values.length - 3; index++) {
+          const lonCandidate = Number(values[index + 1]);
+          const easting = Number(values[index + 2]);
+          const merged = values[index + 3];
+          const split = splitMergedNorthingLatitude(merged);
+          if (!split || !isLon(lonCandidate) || !looksLikeEasting(easting)) continue;
+
+          let lat = split.lat;
+          let lon = lonCandidate;
+          if (projection.zone) {
+            const converted = utmToLatLon(easting, split.northing, projection.zone, projection.hemisphere);
+            if (isLat(converted.lat) && isLon(converted.lon)) {
+              lat = converted.lat;
+              lon = converted.lon;
+            }
+          }
+
+          addPdfTablePoint(points, seen, `PDF-${points.length + 1}`, lat, lon, easting, split.northing);
+          break;
+        }
+      });
+
+      return points;
+    }
+
+    function parseLpmPdfLine(line, projection, index) {
+      const mergedMatch = line.match(/^(\d{1,4})\s+(-?\d{2,3}\.\d{4,})\s+(\d{5,6}\.\d+)\s+(\d{7}\.\d)(-?\d{1,2}\.\d{4,})\b/);
+      if (mergedMatch) {
+        return buildLpmPdfPoint(line, mergedMatch[1], mergedMatch[2], mergedMatch[3], mergedMatch[4], mergedMatch[5], projection, index);
+      }
+
+      const spacedMatch = line.match(/^(\d{1,4})\s+(-?\d{2,3}\.\d{4,})\s+(\d{5,6}\.\d+)\s+(\d{7}(?:\.\d+)?)\s+(-?\d{1,2}\.\d{4,})\b/);
+      if (spacedMatch) {
+        return buildLpmPdfPoint(line, spacedMatch[1], spacedMatch[2], spacedMatch[3], spacedMatch[4], spacedMatch[5], projection, index);
+      }
+
+      const values = line.match(/-?\d+(?:\.\d+)?/g);
+      if (!values || values.length < 5) return null;
+      const serial = values[0];
+      const lonCandidate = Number(values[1]);
+      const easting = Number(values[2]);
+      if (!isLon(lonCandidate) || !looksLikeEasting(easting)) return null;
+
+      for (let valueIndex = 3; valueIndex < values.length; valueIndex++) {
+        const split = splitMergedNorthingLatitude(values[valueIndex]);
+        if (split) {
+          return buildLpmPdfPoint(line, serial, lonCandidate, easting, split.northing, split.lat, projection, index);
+        }
+        const northing = Number(values[valueIndex]);
+        const lat = Number(values[valueIndex + 1]);
+        if (looksLikeNorthing(northing) && isLat(lat)) {
+          return buildLpmPdfPoint(line, serial, lonCandidate, easting, northing, lat, projection, index);
+        }
+      }
+      return null;
+    }
+
+    function buildLpmPdfPoint(line, serial, lonValue, eastingValue, northingValue, latValue, projection, index) {
+      const lpNoMatch = line.match(/\s(\d{1,5})\s*$/);
+      const easting = Number(eastingValue);
+      const northing = Number(northingValue);
+      let lat = Number(latValue);
+      let lon = Number(lonValue);
+
+      if (projection.zone && looksLikeEasting(easting) && looksLikeNorthing(northing)) {
+        const converted = utmToLatLon(easting, northing, projection.zone, projection.hemisphere);
+        if (isLat(converted.lat) && isLon(converted.lon)) {
+          lat = converted.lat;
+          lon = converted.lon;
+        }
+      }
+
+      return {
+        name: lpNoMatch ? `LP-${lpNoMatch[1]}` : `PDF-${serial || index + 1}`,
+        lat,
+        lon,
+        easting,
+        northing
+      };
+    }
+
+    function detectUtmProjection(text) {
+      const match = text.match(/UTM\s*zone\s*(\d{1,2})\s*([NS])?/i);
+      return {
+        zone: match ? Number(match[1]) : Number(elements.importZone.value),
+        hemisphere: match && match[2] ? match[2].toUpperCase() : elements.importHemisphere.value
+      };
+    }
+
+    function splitMergedNorthingLatitude(value) {
+      const text = clean(value);
+      const match = text.match(/^(\d{7}\.\d)(-?\d{1,2}\.\d{4,})$/);
+      if (match) {
+        return {
+          northing: Number(match[1]),
+          lat: Number(match[2])
+        };
+      }
+
+      for (let splitIndex = 9; splitIndex <= Math.min(11, text.length - 5); splitIndex++) {
+        const northing = Number(text.slice(0, splitIndex));
+        const lat = Number(text.slice(splitIndex));
+        if (looksLikeNorthing(northing) && isLat(lat)) return { northing, lat };
+      }
+      return null;
+    }
+
+    function addPdfTablePoint(points, seen, name, lat, lon, easting, northing) {
+      if (!isLat(lat) || !isLon(lon)) return;
+      const key = `${lat.toFixed(7)},${lon.toFixed(7)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      points.push({
+        name,
+        lat,
+        lon,
+        source: `PDF UTM E:${Number(easting).toFixed(1)} N:${Number(northing).toFixed(1)}`
+      });
+    }
+
+    function rowsToPoints(rows, allowNoHeader = false) {
+      if (!rows.length) return [];
+      const firstRow = rows[0].map(value => clean(value).toLowerCase());
+      const headerScore = firstRow.filter(value => ['id', 'name', 'n', 'e', 'lat', 'latitude', 'lon', 'long', 'longitude', 'h', 'z'].includes(value)).length;
+      const hasHeader = headerScore >= 2;
+      const headers = hasHeader ? firstRow : [];
+      const dataRows = hasHeader ? rows.slice(1) : allowNoHeader ? rows : rows.slice(1);
+
+      const findIndex = names => headers.findIndex(header => names.includes(header));
+      const idIndex = findIndex(['id', 'point id', 'pointid']);
+      const nameIndex = findIndex(['name', 'point', 'point name', 'station']);
+      const northIndex = findIndex(['n', 'northing', 'north']);
+      const eastIndex = findIndex(['e', 'easting', 'east']);
+      const latIndex = findIndex(['lat', 'latitude']);
+      const lonIndex = findIndex(['lon', 'long', 'longitude']);
+      const mode = elements.importMode.value;
+      const imported = [];
+
+      dataRows.forEach((row, index) => {
+        const rowText = row.map(clean).join(' ');
+        if (!rowText.trim()) return;
+
+        let lat = NaN;
+        let lon = NaN;
+
+        if (hasHeader && mode !== 'utm' && latIndex >= 0 && lonIndex >= 0) {
+          lat = parseDmsOrDecimal(row[latIndex]);
+          lon = parseDmsOrDecimal(row[lonIndex]);
+        }
+
+        if ((!Number.isFinite(lat) || !Number.isFinite(lon)) && hasHeader && mode !== 'latlon' && northIndex >= 0 && eastIndex >= 0) {
+          const converted = utmToLatLon(row[eastIndex], row[northIndex], elements.importZone.value, elements.importHemisphere.value);
+          lat = converted.lat;
+          lon = converted.lon;
+        }
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+          const pair = extractBestPairFromValues(row);
+          if (pair) {
+            lat = pair.lat;
+            lon = pair.lon;
+          }
+        }
+
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {
+          const name = hasHeader ? clean(row[nameIndex]) || clean(row[idIndex]) : '';
+          imported.push({
+            name: name || `P${state.points.length + imported.length + 1}`,
+            lat,
+            lon,
+            source: 'File'
+          });
+        }
+      });
+
+      if (!imported.length) throw new Error('No usable coordinates were found in this file.');
+      return imported;
+    }
+
+    function extractBestPairFromValues(values) {
+      const parsedValues = values.map(parseDmsOrDecimal).filter(Number.isFinite);
+      for (let index = 0; index < parsedValues.length - 1; index++) {
+        const first = parsedValues[index];
+        const second = parsedValues[index + 1];
+        if (isLat(first) && isLon(second)) return { lat: first, lon: second };
+      }
+
+      const numbers = values.map(value => Number(clean(value))).filter(Number.isFinite);
+      for (let index = 0; index < numbers.length - 1; index++) {
+        const a = numbers[index];
+        const b = numbers[index + 1];
+        if (looksLikeNorthing(a) && looksLikeEasting(b)) {
+          return utmToLatLon(b, a, elements.importZone.value, elements.importHemisphere.value);
+        }
+        if (looksLikeEasting(a) && looksLikeNorthing(b)) {
+          return utmToLatLon(a, b, elements.importZone.value, elements.importHemisphere.value);
+        }
+      }
+      return null;
+    }
+
+    function extractCoordinatePairs(text) {
+      const points = [];
+      const used = new Set();
+      const dmsRegex = /([+-]?\d{1,2}[: ]\d{1,2}[: ]\d{1,2}(?:\.\d+)?)\s+([+-]?\d{2,3}[: ]\d{1,2}[: ]\d{1,2}(?:\.\d+)?)/g;
+      let match;
+      while ((match = dmsRegex.exec(text)) !== null) {
+        const lat = parseDmsOrDecimal(match[1]);
+        const lon = parseDmsOrDecimal(match[2]);
+        addExtractedPair(points, used, lat, lon);
+      }
+
+      const decimalRegex = /(-?\d{1,2}\.\d{4,})\D+(-?\d{2,3}\.\d{4,})/g;
+      while ((match = decimalRegex.exec(text)) !== null) {
+        const lat = Number(match[1]);
+        const lon = Number(match[2]);
+        addExtractedPair(points, used, lat, lon);
+      }
+
+      const utmRegex = /\b([1-9]\d{5,6}(?:\.\d+)?)\D+([1-9]\d{5,6}(?:\.\d+)?)\b/g;
+      while ((match = utmRegex.exec(text)) !== null) {
+        const first = Number(match[1]);
+        const second = Number(match[2]);
+        let converted = null;
+        if (looksLikeNorthing(first) && looksLikeEasting(second)) {
+          converted = utmToLatLon(second, first, elements.importZone.value, elements.importHemisphere.value);
+        } else if (looksLikeEasting(first) && looksLikeNorthing(second)) {
+          converted = utmToLatLon(first, second, elements.importZone.value, elements.importHemisphere.value);
+        }
+        if (converted) addExtractedPair(points, used, converted.lat, converted.lon);
+      }
+
+      return points;
+    }
+
+    function addExtractedPair(points, used, lat, lon) {
+      if (!isLat(lat) || !isLon(lon)) return;
+      const key = `${lat.toFixed(7)},${lon.toFixed(7)}`;
+      if (used.has(key)) return;
+      used.add(key);
+      points.push({
+        name: `PDF-${points.length + 1}`,
+        lat,
+        lon,
+        source: 'PDF'
+      });
+    }
+
+    function addManualPoint() {
+      const name = document.getElementById('pointName').value.trim() || `P${state.points.length + 1}`;
+      let lat;
+      let lon;
+
+      if (elements.manualMode.value === 'utm') {
+        const converted = utmToLatLon(
+          document.getElementById('eastingInput').value,
+          document.getElementById('northingInput').value,
+          document.getElementById('manualZone').value,
+          document.getElementById('manualHemisphere').value
+        );
+        lat = converted.lat;
+        lon = converted.lon;
+      } else {
+        lat = parseDmsOrDecimal(document.getElementById('latInput').value);
+        lon = parseDmsOrDecimal(document.getElementById('lonInput').value);
+      }
+
+      if (!isLat(lat) || !isLon(lon)) {
+        alert('Enter valid latitude/longitude or UTM coordinates.');
+        return;
+      }
+
+      addPoint({ name, lat, lon, source: 'Manual' });
+      renderAll();
+      map.setView([lat, lon], Math.max(map.getZoom(), 17));
+    }
+
+    function addPoint(point) {
+      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+      const finalPoint = { ...point, id };
+      const marker = L.marker([finalPoint.lat, finalPoint.lon], {
+        title: finalPoint.name
+      });
+
+      marker.bindPopup(getPopupHtml(finalPoint));
+      marker.bindTooltip(escapeHtml(finalPoint.name), {
+        permanent: true,
+        direction: 'right',
+        offset: [10, 0],
+        className: 'point-label',
+        opacity: 1
+      });
+      marker.on('click', event => {
+        if (joinMode) {
+          L.DomEvent.stop(event);
+          marker.closePopup();
+          map.closePopup();
+          selectForJoin(finalPoint.id);
+        } else {
+          marker.openPopup();
+        }
+      });
+      marker.addTo(markerLayer);
+      finalPoint.marker = marker;
+      state.points.push(finalPoint);
+    }
+
+    function selectForJoin(pointId) {
+      if (!joinMode) return;
+      if (state.joinOrder.includes(pointId)) return;
+      state.joinOrder.push(pointId);
+      updateJoinPreview();
+      renderAll();
+    }
+
+    function toggleJoinMode() {
+      joinMode = !joinMode;
+      elements.startJoinBtn.textContent = joinMode ? 'Stop Join Mode' : 'Start Join Mode';
+      elements.startJoinBtn.classList.toggle('red', joinMode);
+      elements.startJoinBtn.classList.toggle('amber', !joinMode);
+      elements.joinBanner.classList.toggle('active', joinMode);
+      setNotice(elements.polygonNotice, joinMode ? 'Join mode is active. Click markers or point cards in boundary order.' : 'Join mode stopped. You can finish the polygon if 3 or more points are selected.', joinMode ? 'good' : '');
+      renderAll();
+    }
+
+    function finishPolygon() {
+      if (state.joinOrder.length < 3) {
+        setNotice(elements.polygonNotice, 'Select at least 3 points in boundary order before finishing.', 'error');
+        return;
+      }
+
+      if (polygonLayer) map.removeLayer(polygonLayer);
+      if (areaLabel) map.removeLayer(areaLabel);
+      removePolygonNameLabel();
+      const selected = getJoinedPoints();
+      const latLngs = selected.map(point => [point.lat, point.lon]);
+      polygonLayer = L.polygon(latLngs, {
+        color: '#22c55e',
+        fillColor: '#16a34a',
+        fillOpacity: 0.28,
+        weight: 4
+      }).addTo(map);
+      polygonLayer.on('click', askForPolygonName);
+
+      const areaSqM = calculateSphericalArea(selected);
+      const polygonCenter = getPolygonCenter(selected);
+      state.areaSqM = areaSqM;
+      updateAreaDisplay();
+      areaLabel = L.tooltip({
+        permanent: true,
+        direction: 'center',
+        className: 'area-label',
+        opacity: 1,
+        interactive: false
+      })
+        .setLatLng(polygonCenter)
+        .setContent(formatArea(areaSqM))
+        .addTo(map);
+      map.fitBounds(polygonLayer.getBounds(), { padding: [40, 40] });
+      joinMode = false;
+      elements.startJoinBtn.textContent = 'Start Join Mode';
+      elements.startJoinBtn.classList.remove('red');
+      elements.startJoinBtn.classList.add('amber');
+      elements.joinBanner.classList.remove('active');
+      setNotice(elements.polygonNotice, `Polygon completed from ${selected.length} selected point(s). Area: ${formatArea(areaSqM)}.`, 'good');
+      renderAll();
+    }
+
+    function undoJoin() {
+      state.joinOrder.pop();
+      updateJoinPreview();
+      renderAll();
+    }
+
+    function clearJoin() {
+      state.joinOrder = [];
+      if (previewLine) {
+        map.removeLayer(previewLine);
+        previewLine = null;
+      }
+      if (polygonLayer) {
+        map.removeLayer(polygonLayer);
+        polygonLayer = null;
+      }
+      if (areaLabel) {
+        map.removeLayer(areaLabel);
+        areaLabel = null;
+      }
+      removePolygonNameLabel();
+      state.areaSqM = 0;
+      updateAreaDisplay();
+      renderAll();
+      setNotice(elements.polygonNotice, 'Polygon selection cleared. Start join mode and select points again.', '');
+    }
+
+    function clearAll() {
+      state.points = [];
+      state.joinOrder = [];
+      markerLayer.clearLayers();
+      if (previewLine) map.removeLayer(previewLine);
+      if (polygonLayer) map.removeLayer(polygonLayer);
+      if (areaLabel) map.removeLayer(areaLabel);
+      if (polygonNameLabel) map.removeLayer(polygonNameLabel);
+      previewLine = null;
+      polygonLayer = null;
+      areaLabel = null;
+      polygonNameLabel = null;
+      state.polygonName = '';
+      state.polygonKathaNo = '';
+      state.polygonSurveyNo = '';
+      state.polygonRemarks = '';
+      state.areaSqM = 0;
+      updateAreaDisplay();
+      renderAll();
+      setNotice(elements.polygonNotice, 'All points and polygon data cleared.', '');
+    }
+
+    function updateJoinPreview() {
+      if (previewLine) map.removeLayer(previewLine);
+      const selected = getJoinedPoints();
+      if (selected.length >= 2) {
+        previewLine = L.polyline(selected.map(point => [point.lat, point.lon]), {
+          color: '#f59e0b',
+          weight: 4,
+          dashArray: '8,8'
+        }).addTo(map);
+      }
+    }
+
+    function getJoinedPoints() {
+      return state.joinOrder
+        .map(id => state.points.find(point => point.id === id))
+        .filter(Boolean);
+    }
+
+    function renderAll() {
+      elements.pointCount.textContent = String(state.points.length);
+      elements.joinCount.textContent = String(state.joinOrder.length);
+      elements.finishPolygonBtn.disabled = state.joinOrder.length < 3;
+      elements.undoJoinBtn.disabled = state.joinOrder.length === 0;
+      elements.selectedOrder.value = getJoinedPoints().map((point, index) => `${index + 1}. ${point.name}`).join('\n');
+
+      elements.pointList.innerHTML = '';
+      state.points.forEach((point, index) => {
+        const selectedIndex = state.joinOrder.indexOf(point.id);
+        const card = document.createElement('div');
+        card.className = `point-card${selectedIndex >= 0 ? ' selected' : ''}`;
+        card.innerHTML = `
+          <div class="badge">${selectedIndex >= 0 ? selectedIndex + 1 : index + 1}</div>
+          <div>
+            <div class="point-name">${escapeHtml(point.name)}</div>
+            <div class="point-meta">${point.lat.toFixed(8)}, ${point.lon.toFixed(8)}<br>${escapeHtml(point.source || 'Point')}</div>
+          </div>
+          <button class="tiny red" type="button" title="Remove point">X</button>
+        `;
+        card.addEventListener('click', event => {
+          if (event.target.tagName.toLowerCase() === 'button') return;
+          if (joinMode) {
+            selectForJoin(point.id);
+          } else {
+            map.setView([point.lat, point.lon], Math.max(map.getZoom(), 18));
+            point.marker.openPopup();
+          }
+        });
+        card.querySelector('button').addEventListener('click', () => removePoint(point.id));
+        elements.pointList.appendChild(card);
+      });
+
+      state.points.forEach(point => {
+        const selectedIndex = state.joinOrder.indexOf(point.id);
+        if (joinMode) {
+          point.marker.closePopup();
+          point.marker.unbindPopup();
+        } else if (point.marker.getPopup()) {
+          point.marker.setPopupContent(getPopupHtml(point, selectedIndex));
+        } else {
+          point.marker.bindPopup(getPopupHtml(point, selectedIndex));
+        }
+      });
+    }
+
+    function removePoint(pointId) {
+      const point = state.points.find(item => item.id === pointId);
+      if (!point) return;
+      markerLayer.removeLayer(point.marker);
+      state.points = state.points.filter(item => item.id !== pointId);
+      state.joinOrder = state.joinOrder.filter(id => id !== pointId);
+      clearPolygonOnly();
+      updateJoinPreview();
+      renderAll();
+    }
+
+    function clearPolygonOnly() {
+      if (polygonLayer) {
+        map.removeLayer(polygonLayer);
+        polygonLayer = null;
+      }
+      if (areaLabel) {
+        map.removeLayer(areaLabel);
+        areaLabel = null;
+      }
+      removePolygonNameLabel();
+      state.areaSqM = 0;
+      updateAreaDisplay();
+    }
+
+    function getPopupHtml(point, selectedIndex = state.joinOrder.indexOf(point.id)) {
+      const selectedText = selectedIndex >= 0 ? `<br><strong>Join order:</strong> ${selectedIndex + 1}` : '';
+      return `
+        <div class="popup-title">${escapeHtml(point.name)}</div>
+        <div>Lat: ${point.lat.toFixed(8)}</div>
+        <div>Lon: ${point.lon.toFixed(8)}</div>
+        <div>Source: ${escapeHtml(point.source || 'Point')}</div>
+        ${selectedText}
+      `;
+    }
+
+    function fitMap() {
+      if (!state.points.length) return;
+      const bounds = L.latLngBounds(state.points.map(point => [point.lat, point.lon]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 19 });
+    }
+
+    function setBaseMap(mode) {
+      if (activeBase === mode) return;
+      if (mode === 'hybrid') {
+        map.removeLayer(streetLayer);
+        hybridGroup.addTo(map);
+      } else {
+        map.removeLayer(hybridGroup);
+        streetLayer.addTo(map);
+      }
+      activeBase = mode;
+      document.getElementById('hybridBtn').classList.toggle('active', mode === 'hybrid');
+      document.getElementById('streetBtn').classList.toggle('active', mode === 'street');
+    }
+
+    function locateUser() {
+      if (!navigator.geolocation) {
+        alert('Location is not available in this browser.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        map.setView([lat, lon], 18);
+        L.circleMarker([lat, lon], {
+          radius: 8,
+          color: '#fff',
+          fillColor: '#2563eb',
+          fillOpacity: 1,
+          weight: 3
+        }).addTo(map).bindPopup('Current location').openPopup();
+      }, () => alert('Could not get current location.'));
+    }
+
+    function exportCsv() {
+      if (!state.points.length) return;
+      const rows = [['Name', 'Latitude', 'Longitude', 'Source']].concat(
+        state.points.map(point => [point.name, point.lat, point.lon, point.source || ''])
+      );
+      const csv = rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'mapped_points.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportPolygon() {
+      const data = getPolygonExportData();
+      if (!data) return;
+
+      const format = elements.polygonExportFormat.value;
+      const fileBase = sanitizeFileName(data.name || 'polygon');
+
+      if (format === 'kml') {
+        downloadBlob(new Blob([buildPolygonKml(data)], { type: 'application/vnd.google-earth.kml+xml' }), `${fileBase}.kml`);
+      } else if (format === 'shp') {
+        downloadBlob(buildPolygonShpZip(data, fileBase), `${fileBase}_shp.zip`);
+      } else if (format === 'dxf') {
+        downloadBlob(new Blob([buildPolygonDxf(data)], { type: 'application/dxf' }), `${fileBase}.dxf`);
+      }
+    }
+
+    function getPolygonExportData() {
+      const selected = getJoinedPoints();
+      if (!polygonLayer || selected.length < 3 || state.areaSqM <= 0) {
+        setNotice(elements.polygonNotice, 'There is no polygon drawn on the map.', 'error');
+        alert('There is no polygon drawn on the map.');
+        return null;
+      }
+
+      const ring = selected.map(point => ({ lat: point.lat, lon: point.lon }));
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (first.lat !== last.lat || first.lon !== last.lon) {
+        ring.push({ lat: first.lat, lon: first.lon });
+      }
+
+      const centerValue = getPolygonCenter(selected);
+      const center = Array.isArray(centerValue)
+        ? { lat: centerValue[0], lon: centerValue[1] }
+        : { lat: centerValue.lat, lon: centerValue.lng };
+
+      return {
+        name: state.polygonName,
+        kathaNo: state.polygonKathaNo,
+        surveyNo: state.polygonSurveyNo,
+        areaSqM: state.areaSqM,
+        areaText: formatArea(state.areaSqM),
+        areaUnit: elements.areaUnit.value,
+        remarks: state.polygonRemarks,
+        ring,
+        center,
+        bounds: getCoordinateBounds(ring)
+      };
+    }
+
+    function buildPolygonKml(data) {
+      const coordinates = data.ring.map(point => `${point.lon},${point.lat},0`).join(' ');
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Style id="boundaryOnly">
+      <LineStyle>
+        <color>ff00a34a</color>
+        <width>3</width>
+      </LineStyle>
+      <PolyStyle>
+        <fill>0</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <Placemark>
+      <name>${escapeXml(data.name)}</name>
+      <styleUrl>#boundaryOnly</styleUrl>
+      <ExtendedData>
+        <Data name="name"><value>${escapeXml(data.name)}</value></Data>
+        <Data name="katha_no"><value>${escapeXml(data.kathaNo)}</value></Data>
+        <Data name="survey_no"><value>${escapeXml(data.surveyNo)}</value></Data>
+        <Data name="area"><value>${escapeXml(data.areaText)}</value></Data>
+        <Data name="area_sqm"><value>${data.areaSqM.toFixed(2)}</value></Data>
+        <Data name="remarks"><value>${escapeXml(data.remarks)}</value></Data>
+      </ExtendedData>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${coordinates}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>`;
+    }
+
+    function buildPolygonDxf(data) {
+      const vertices = data.ring.slice(0, -1).map(point => `10
+${formatDxfNumber(point.lon)}
+20
+${formatDxfNumber(point.lat)}`).join('\n');
+      const labelHeight = Math.max((data.bounds.maxX - data.bounds.minX + data.bounds.maxY - data.bounds.minY) / 80, 0.00005);
+      const labelLines = [
+        data.name,
+        data.kathaNo ? `Katha No: ${data.kathaNo}` : '',
+        data.surveyNo ? `Survey No: ${data.surveyNo}` : '',
+        `Area: ${data.areaText}`,
+        data.remarks ? `Remarks: ${data.remarks}` : ''
+      ].filter(Boolean);
+      const labels = labelLines.map((line, index) => `0
+TEXT
+8
+POLYGON_LABEL
+10
+${formatDxfNumber(data.center.lon)}
+20
+${formatDxfNumber(data.center.lat + labelHeight * (labelLines.length - index - 1))}
+40
+${formatDxfNumber(labelHeight)}
+1
+${escapeDxfText(line)}`).join('\n');
+      return `0
+SECTION
+2
+ENTITIES
+0
+LWPOLYLINE
+8
+POLYGON
+90
+${data.ring.length - 1}
+70
+1
+${vertices}
+${labels}
+0
+ENDSEC
+0
+EOF
+`;
+    }
+
+    function buildPolygonShpZip(data, fileBase) {
+      const files = [
+        { name: `${fileBase}.shp`, data: buildShpFile(data.ring, data.bounds) },
+        { name: `${fileBase}.shx`, data: buildShxFile(data.ring, data.bounds) },
+        { name: `${fileBase}.dbf`, data: buildDbfFile(data) },
+        { name: `${fileBase}.prj`, data: 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]' }
+      ];
+      return createZipBlob(files);
+    }
+
+    function buildShpFile(ring, bounds) {
+      const contentBytes = 48 + ring.length * 16;
+      const totalBytes = 100 + 8 + contentBytes;
+      const buffer = new ArrayBuffer(totalBytes);
+      const view = new DataView(buffer);
+      writeShpHeader(view, totalBytes / 2, bounds);
+      view.setInt32(100, 1, false);
+      view.setInt32(104, contentBytes / 2, false);
+      writePolygonRecordContent(view, 108, ring, bounds);
+      return new Uint8Array(buffer);
+    }
+
+    function buildShxFile(ring, bounds) {
+      const contentBytes = 48 + ring.length * 16;
+      const totalBytes = 108;
+      const buffer = new ArrayBuffer(totalBytes);
+      const view = new DataView(buffer);
+      writeShpHeader(view, totalBytes / 2, bounds);
+      view.setInt32(100, 50, false);
+      view.setInt32(104, contentBytes / 2, false);
+      return new Uint8Array(buffer);
+    }
+
+    function writeShpHeader(view, fileLengthWords, bounds) {
+      view.setInt32(0, 9994, false);
+      view.setInt32(24, fileLengthWords, false);
+      view.setInt32(28, 1000, true);
+      view.setInt32(32, 5, true);
+      view.setFloat64(36, bounds.minX, true);
+      view.setFloat64(44, bounds.minY, true);
+      view.setFloat64(52, bounds.maxX, true);
+      view.setFloat64(60, bounds.maxY, true);
+    }
+
+    function writePolygonRecordContent(view, offset, ring, bounds) {
+      view.setInt32(offset, 5, true);
+      view.setFloat64(offset + 4, bounds.minX, true);
+      view.setFloat64(offset + 12, bounds.minY, true);
+      view.setFloat64(offset + 20, bounds.maxX, true);
+      view.setFloat64(offset + 28, bounds.maxY, true);
+      view.setInt32(offset + 36, 1, true);
+      view.setInt32(offset + 40, ring.length, true);
+      view.setInt32(offset + 44, 0, true);
+      let cursor = offset + 48;
+      ring.forEach(point => {
+        view.setFloat64(cursor, point.lon, true);
+        view.setFloat64(cursor + 8, point.lat, true);
+        cursor += 16;
+      });
+    }
+
+    function buildDbfFile(data) {
+      const fields = [
+        { name: 'NAME', type: 'C', length: 80, decimals: 0, value: data.name },
+        { name: 'KATHA_NO', type: 'C', length: 40, decimals: 0, value: data.kathaNo },
+        { name: 'SURVEY_NO', type: 'C', length: 40, decimals: 0, value: data.surveyNo },
+        { name: 'AREA_SQM', type: 'N', length: 18, decimals: 2, value: data.areaSqM },
+        { name: 'AREA', type: 'C', length: 32, decimals: 0, value: data.areaText },
+        { name: 'REMARKS', type: 'C', length: 120, decimals: 0, value: data.remarks }
+      ];
+      const recordLength = 1 + fields.reduce((total, field) => total + field.length, 0);
+      const headerLength = 32 + fields.length * 32 + 1;
+      const bytes = new Uint8Array(headerLength + recordLength + 1);
+      const view = new DataView(bytes.buffer);
+      const now = new Date();
+
+      bytes[0] = 3;
+      bytes[1] = now.getFullYear() - 1900;
+      bytes[2] = now.getMonth() + 1;
+      bytes[3] = now.getDate();
+      view.setUint32(4, 1, true);
+      view.setUint16(8, headerLength, true);
+      view.setUint16(10, recordLength, true);
+
+      fields.forEach((field, index) => {
+        const offset = 32 + index * 32;
+        writeAscii(bytes, offset, field.name.slice(0, 10), 11, 0);
+        bytes[offset + 11] = field.type.charCodeAt(0);
+        bytes[offset + 16] = field.length;
+        bytes[offset + 17] = field.decimals;
+      });
+
+      bytes[headerLength - 1] = 13;
+      let cursor = headerLength;
+      bytes[cursor++] = 32;
+      fields.forEach(field => {
+        writeAscii(bytes, cursor, formatDbfField(field), field.length, 32);
+        cursor += field.length;
+      });
+      bytes[bytes.length - 1] = 26;
+      return bytes;
+    }
+
+    function formatDbfField(field) {
+      if (field.type === 'N') {
+        return Number(field.value).toFixed(field.decimals).slice(0, field.length).padStart(field.length, ' ');
+      }
+      return cleanDbfText(field.value).slice(0, field.length).padEnd(field.length, ' ');
+    }
+
+    function createZipBlob(files) {
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      files.forEach(file => {
+        const data = file.data instanceof Uint8Array ? file.data : new TextEncoder().encode(String(file.data));
+        const nameBytes = new TextEncoder().encode(file.name);
+        const crc = crc32(data);
+        const localHeader = new Uint8Array(30 + nameBytes.length);
+        const centralHeader = new Uint8Array(46 + nameBytes.length);
+        const localView = new DataView(localHeader.buffer);
+        const centralView = new DataView(centralHeader.buffer);
+        const zipTime = getZipTime();
+        const zipDate = getZipDate();
+
+        localView.setUint32(0, 0x04034b50, true);
+        localView.setUint16(4, 20, true);
+        localView.setUint16(10, zipTime, true);
+        localView.setUint16(12, zipDate, true);
+        localView.setUint32(14, crc, true);
+        localView.setUint32(18, data.length, true);
+        localView.setUint32(22, data.length, true);
+        localView.setUint16(26, nameBytes.length, true);
+        localHeader.set(nameBytes, 30);
+
+        centralView.setUint32(0, 0x02014b50, true);
+        centralView.setUint16(4, 20, true);
+        centralView.setUint16(6, 20, true);
+        centralView.setUint16(12, zipTime, true);
+        centralView.setUint16(14, zipDate, true);
+        centralView.setUint32(16, crc, true);
+        centralView.setUint32(20, data.length, true);
+        centralView.setUint32(24, data.length, true);
+        centralView.setUint16(28, nameBytes.length, true);
+        centralView.setUint32(42, offset, true);
+        centralHeader.set(nameBytes, 46);
+
+        localParts.push(localHeader, data);
+        centralParts.push(centralHeader);
+        offset += localHeader.length + data.length;
+      });
+
+      const centralOffset = offset;
+      const centralSize = centralParts.reduce((total, part) => total + part.length, 0);
+      const endRecord = new Uint8Array(22);
+      const endView = new DataView(endRecord.buffer);
+      endView.setUint32(0, 0x06054b50, true);
+      endView.setUint16(8, files.length, true);
+      endView.setUint16(10, files.length, true);
+      endView.setUint32(12, centralSize, true);
+      endView.setUint32(16, centralOffset, true);
+
+      return new Blob([...localParts, ...centralParts, endRecord], { type: 'application/zip' });
+    }
+
+    function crc32(bytes) {
+      const table = crc32.table || (crc32.table = buildCrc32Table());
+      let crc = 0xffffffff;
+      bytes.forEach(byte => {
+        crc = (crc >>> 8) ^ table[(crc ^ byte) & 0xff];
+      });
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function buildCrc32Table() {
+      const table = new Uint32Array(256);
+      for (let index = 0; index < 256; index++) {
+        let value = index;
+        for (let bit = 0; bit < 8; bit++) {
+          value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+        }
+        table[index] = value >>> 0;
+      }
+      return table;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function getCoordinateBounds(points) {
+      return points.reduce((bounds, point) => ({
+        minX: Math.min(bounds.minX, point.lon),
+        minY: Math.min(bounds.minY, point.lat),
+        maxX: Math.max(bounds.maxX, point.lon),
+        maxY: Math.max(bounds.maxY, point.lat)
+      }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+    }
+
+    function getZipTime() {
+      const now = new Date();
+      return (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2);
+    }
+
+    function getZipDate() {
+      const now = new Date();
+      return ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+    }
+
+    function writeAscii(bytes, offset, text, length, fill) {
+      bytes.fill(fill, offset, offset + length);
+      const safeText = cleanDbfText(text);
+      for (let index = 0; index < Math.min(safeText.length, length); index++) {
+        bytes[offset + index] = safeText.charCodeAt(index);
+      }
+    }
+
+    function cleanDbfText(value) {
+      return String(value ?? '').replace(/[^\x20-\x7e]/g, '');
+    }
+
+    function sanitizeFileName(value) {
+      return cleanDbfText(value).trim().replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'polygon';
+    }
+
+    function formatDxfNumber(value) {
+      return Number(value).toFixed(8);
+    }
+
+    function escapeDxfText(value) {
+      return cleanDbfText(value).replace(/[\\{}]/g, '');
+    }
+
+    function escapeXml(value) {
+      return String(value).replace(/[<>&'"]/g, char => ({
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        "'": '&apos;',
+        '"': '&quot;'
+      })[char]);
+    }
+
+    function loadSampleRow() {
+      addPoint({
+        name: 'pt0',
+        lat: parseDmsOrDecimal('16:11:24.73575'),
+        lon: parseDmsOrDecimal('79:43:14.23323'),
+        source: 'Sample'
+      });
+      renderAll();
+      fitMap();
+      setNotice(elements.importNotice, 'Sample coordinate loaded from your CSV format.', 'good');
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let insideQuotes = false;
+
+      for (let index = 0; index < text.length; index++) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === '"' && insideQuotes && next === '"') {
+          cell += '"';
+          index++;
+        } else if (char === '"') {
+          insideQuotes = !insideQuotes;
+        } else if (char === ',' && !insideQuotes) {
+          row.push(cell);
+          cell = '';
+        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+          if (char === '\r' && next === '\n') index++;
+          row.push(cell);
+          if (row.some(value => clean(value))) rows.push(row);
+          row = [];
+          cell = '';
+        } else {
+          cell += char;
+        }
+      }
+
+      row.push(cell);
+      if (row.some(value => clean(value))) rows.push(row);
+      return rows;
+    }
+
+    function parseLooseRows(text) {
+      return text
+        .split(/\n|(?=\b\d+\s+[A-Za-z0-9_-]+\s+)/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => line.split(/[,\t ]{2,}|\s+(?=[+-]?\d)/).filter(Boolean));
+    }
+
+    function parseDmsOrDecimal(value) {
+      const text = clean(value);
+      if (!text) return NaN;
+      const decimal = Number(text);
+      if (Number.isFinite(decimal)) return decimal;
+
+      const sign = /[SW-]/i.test(text) ? -1 : 1;
+      const parts = text
+        .replace(/[NSEW]/gi, '')
+        .replace(/[^\d.+-]+/g, ':')
+        .split(':')
+        .filter(Boolean)
+        .map(Number);
+
+      if (!parts.length || parts.some(part => !Number.isFinite(part))) return NaN;
+      return sign * (Math.abs(parts[0]) + (parts[1] || 0) / 60 + (parts[2] || 0) / 3600);
+    }
+
+    function utmToLatLon(easting, northing, zone, hemisphere) {
+      const eastingValue = Number(easting);
+      const northingValue = Number(northing);
+      const zoneValue = Number(zone);
+      if (!Number.isFinite(eastingValue) || !Number.isFinite(northingValue) || !Number.isFinite(zoneValue)) {
+        return { lat: NaN, lon: NaN };
+      }
+
+      const a = 6378137.0;
+      const eccSquared = 0.00669438;
+      const k0 = 0.9996;
+      const eccPrimeSquared = eccSquared / (1 - eccSquared);
+      const e1 = (1 - Math.sqrt(1 - eccSquared)) / (1 + Math.sqrt(1 - eccSquared));
+
+      const x = eastingValue - 500000.0;
+      let y = northingValue;
+      if (String(hemisphere).toUpperCase() === 'S') y -= 10000000.0;
+
+      const longOrigin = (zoneValue - 1) * 6 - 180 + 3;
+      const m = y / k0;
+      const mu = m / (a * (1 - eccSquared / 4 - 3 * eccSquared * eccSquared / 64 - 5 * Math.pow(eccSquared, 3) / 256));
+      const phi1Rad = mu
+        + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu)
+        + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu)
+        + (151 * Math.pow(e1, 3) / 96) * Math.sin(6 * mu);
+      const n1 = a / Math.sqrt(1 - eccSquared * Math.sin(phi1Rad) * Math.sin(phi1Rad));
+      const t1 = Math.tan(phi1Rad) * Math.tan(phi1Rad);
+      const c1 = eccPrimeSquared * Math.cos(phi1Rad) * Math.cos(phi1Rad);
+      const r1 = a * (1 - eccSquared) / Math.pow(1 - eccSquared * Math.sin(phi1Rad) * Math.sin(phi1Rad), 1.5);
+      const d = x / (n1 * k0);
+      const lat = phi1Rad - (n1 * Math.tan(phi1Rad) / r1) * (
+        d * d / 2
+        - (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * eccPrimeSquared) * Math.pow(d, 4) / 24
+        + (61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * eccPrimeSquared - 3 * c1 * c1) * Math.pow(d, 6) / 720
+      );
+      const lon = (d
+        - (1 + 2 * t1 + c1) * Math.pow(d, 3) / 6
+        + (5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * eccPrimeSquared + 24 * t1 * t1) * Math.pow(d, 5) / 120
+      ) / Math.cos(phi1Rad);
+
+      return {
+        lat: lat * 180 / Math.PI,
+        lon: longOrigin + lon * 180 / Math.PI
+      };
+    }
+
+    function calculateSphericalArea(points) {
+      const radius = 6378137;
+      let total = 0;
+      for (let index = 0; index < points.length; index++) {
+        const current = points[index];
+        const next = points[(index + 1) % points.length];
+        const lon1 = current.lon * Math.PI / 180;
+        const lon2 = next.lon * Math.PI / 180;
+        const lat1 = current.lat * Math.PI / 180;
+        const lat2 = next.lat * Math.PI / 180;
+        total += (lon2 - lon1) * (2 + Math.sin(lat1) + Math.sin(lat2));
+      }
+      return Math.abs(total * radius * radius / 2);
+    }
+
+    function askForPolygonName() {
+      if (!polygonLayer) return;
+      const areaText = formatArea(state.areaSqM);
+      const name = prompt(`NAME (optional)\nAREA: ${areaText}`, state.polygonName);
+      if (name === null) return;
+      const kathaNo = prompt(`KATHA NO (optional)\nAREA: ${areaText}`, state.polygonKathaNo);
+      if (kathaNo === null) return;
+      const surveyNo = prompt(`SURVEY NO (optional)\nAREA: ${areaText}`, state.polygonSurveyNo);
+      if (surveyNo === null) return;
+      const remarks = prompt(`REMARKS (optional)\nAREA: ${areaText}`, state.polygonRemarks);
+      if (remarks === null) return;
+
+      state.polygonName = name.trim();
+      state.polygonKathaNo = kathaNo.trim();
+      state.polygonSurveyNo = surveyNo.trim();
+      state.polygonRemarks = remarks.trim();
+
+      if (!state.polygonName) {
+        if (polygonNameLabel) {
+          map.removeLayer(polygonNameLabel);
+          polygonNameLabel = null;
+        }
+        return;
+      }
+
+      updatePolygonNameLabel();
+    }
+
+    function updatePolygonNameLabel() {
+      const selected = getJoinedPoints();
+      if (!polygonLayer || !state.polygonName || !selected.length) return;
+      if (polygonNameLabel) map.removeLayer(polygonNameLabel);
+
+      polygonNameLabel = L.tooltip({
+        permanent: true,
+        direction: 'center',
+        offset: [0, -28],
+        className: 'area-label polygon-name-label',
+        opacity: 1,
+        interactive: false
+      })
+        .setLatLng(getPolygonCenter(selected))
+        .setContent(escapeHtml(state.polygonName))
+        .addTo(map);
+    }
+
+    function removePolygonNameLabel() {
+      if (polygonNameLabel) {
+        map.removeLayer(polygonNameLabel);
+        polygonNameLabel = null;
+      }
+      state.polygonName = '';
+      state.polygonKathaNo = '';
+      state.polygonSurveyNo = '';
+      state.polygonRemarks = '';
+    }
+
+    function getPolygonCenter(points) {
+      let twiceArea = 0;
+      let latSum = 0;
+      let lonSum = 0;
+
+      for (let index = 0; index < points.length; index++) {
+        const current = points[index];
+        const next = points[(index + 1) % points.length];
+        const cross = current.lon * next.lat - next.lon * current.lat;
+        twiceArea += cross;
+        lonSum += (current.lon + next.lon) * cross;
+        latSum += (current.lat + next.lat) * cross;
+      }
+
+      if (Math.abs(twiceArea) < 1e-12) {
+        return L.latLngBounds(points.map(point => [point.lat, point.lon])).getCenter();
+      }
+
+      return [latSum / (3 * twiceArea), lonSum / (3 * twiceArea)];
+    }
+
+    function updateAreaDisplay() {
+      elements.areaValue.textContent = formatArea(state.areaSqM);
+      if (areaLabel) areaLabel.setContent(formatArea(state.areaSqM));
+    }
+
+    function formatArea(areaSqM) {
+      if (!Number.isFinite(areaSqM) || areaSqM <= 0) return zeroAreaLabel();
+      const unit = elements.areaUnit.value;
+      const units = {
+        acres: { factor: 0.000247105381, label: 'acres', decimals: 4 },
+        sqm: { factor: 1, label: 'm²', decimals: 2 },
+        sqft: { factor: 10.763910417, label: 'ft²', decimals: 2 },
+        sqyd: { factor: 1.195990046, label: 'yd²', decimals: 2 },
+        hectares: { factor: 0.0001, label: 'ha', decimals: 4 }
+      };
+      const selected = units[unit] || units.acres;
+      return `${(areaSqM * selected.factor).toFixed(selected.decimals)} ${selected.label}`;
+    }
+
+    function zeroAreaLabel() {
+      const unit = elements.areaUnit.value;
+      const labels = {
+        acres: '0 acres',
+        sqm: '0 m²',
+        sqft: '0 ft²',
+        sqyd: '0 yd²',
+        hectares: '0 ha'
+      };
+      return labels[unit] || '0 acres';
+    }
+
+    function isLat(value) {
+      return Number.isFinite(value) && value >= -90 && value <= 90;
+    }
+
+    function isLon(value) {
+      return Number.isFinite(value) && value >= -180 && value <= 180;
+    }
+
+    function looksLikeEasting(value) {
+      return Number.isFinite(value) && value >= 100000 && value <= 900000;
+    }
+
+    function looksLikeNorthing(value) {
+      return Number.isFinite(value) && value >= 1000000 && value <= 10000000;
+    }
+
+    function clean(value) {
+      return String(value ?? '').trim().replace(/^"|"$/g, '');
+    }
+
+    function setNotice(element, message, type) {
+      element.textContent = message;
+      element.className = `notice${type ? ` ${type}` : ''}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      })[char]);
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>
