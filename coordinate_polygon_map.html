@@ -460,8 +460,32 @@
 
     .polygon-name-label {
       border-color: rgba(29, 78, 216, 0.34);
+      min-width: 170px;
+      max-width: 260px;
+      padding: 8px 10px;
       color: #1e3a8a;
       background: rgba(239, 246, 255, 0.96);
+      font-size: 14px;
+      line-height: 1.35;
+      text-align: left;
+      white-space: normal;
+    }
+
+    .polygon-name-label div + div {
+      margin-top: 2px;
+    }
+
+    .split-edge-label {
+      border: 1px solid #f59e0b;
+      border-radius: 5px;
+      padding: 4px 7px;
+      color: #78350f;
+      background: rgba(255, 251, 235, 0.96);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
     }
 
     .popup-title {
@@ -858,6 +882,7 @@
               <button id="clearJoinBtn" class="secondary" type="button">Clear Join</button>
               <button id="clearAllBtn" class="red" type="button">Clear All</button>
             </div>
+            <button id="splitPolygonBtn" class="secondary translucent" type="button" style="margin-top: 8px;">Split Polygon</button>
             <label for="polygonExportFormat">Export polygon</label>
             <div class="button-row">
               <select id="polygonExportFormat">
@@ -896,6 +921,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
   <script>
     const map = L.map('map', { zoomControl: false }).setView([16.2, 79.72], 14);
 
@@ -920,10 +946,14 @@
     let areaLabel = null;
     let polygonNameLabel = null;
     let joinMode = false;
+    let splitMode = false;
+    let splitEdgeLayers = [];
+    let splitPointCounter = 1;
 
     const state = {
       points: [],
       joinOrder: [],
+      splitParts: [],
       areaSqM: 0,
       polygonName: '',
       polygonKathaNo: '',
@@ -950,6 +980,7 @@
       polygonNotice: document.getElementById('polygonNotice'),
       joinBanner: document.getElementById('joinBanner'),
       startJoinBtn: document.getElementById('startJoinBtn'),
+      splitPolygonBtn: document.getElementById('splitPolygonBtn'),
       finishPolygonBtn: document.getElementById('finishPolygonBtn'),
       undoJoinBtn: document.getElementById('undoJoinBtn')
     };
@@ -980,6 +1011,7 @@
     document.getElementById('exportBtn').addEventListener('click', exportCsv);
     document.getElementById('exportPolygonBtn').addEventListener('click', exportPolygon);
     document.getElementById('startJoinBtn').addEventListener('click', toggleJoinMode);
+    document.getElementById('splitPolygonBtn').addEventListener('click', toggleSplitMode);
     document.getElementById('finishPolygonBtn').addEventListener('click', finishPolygon);
     document.getElementById('undoJoinBtn').addEventListener('click', undoJoin);
     document.getElementById('clearJoinBtn').addEventListener('click', clearJoin);
@@ -1197,6 +1229,10 @@
         name,
         lat,
         lon,
+        easting,
+        northing,
+        zone: Number(elements.importZone.value),
+        hemisphere: elements.importHemisphere.value,
         source: `PDF UTM E:${Number(easting).toFixed(1)} N:${Number(northing).toFixed(1)}`
       });
     }
@@ -1225,6 +1261,8 @@
 
         let lat = NaN;
         let lon = NaN;
+        let easting = null;
+        let northing = null;
 
         if (hasHeader && mode !== 'utm' && latIndex >= 0 && lonIndex >= 0) {
           lat = parseDmsOrDecimal(row[latIndex]);
@@ -1235,6 +1273,8 @@
           const converted = utmToLatLon(row[eastIndex], row[northIndex], elements.importZone.value, elements.importHemisphere.value);
           lat = converted.lat;
           lon = converted.lon;
+          easting = Number(row[eastIndex]);
+          northing = Number(row[northIndex]);
         }
 
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
@@ -1251,6 +1291,10 @@
             name: name || `P${state.points.length + imported.length + 1}`,
             lat,
             lon,
+            easting,
+            northing,
+            zone: easting && northing ? Number(elements.importZone.value) : null,
+            hemisphere: easting && northing ? elements.importHemisphere.value : null,
             source: 'File'
           });
         }
@@ -1333,16 +1377,27 @@
       const name = document.getElementById('pointName').value.trim() || `P${state.points.length + 1}`;
       let lat;
       let lon;
+      let utmDetails = null;
 
       if (elements.manualMode.value === 'utm') {
+        const easting = document.getElementById('eastingInput').value;
+        const northing = document.getElementById('northingInput').value;
+        const zone = document.getElementById('manualZone').value;
+        const hemisphere = document.getElementById('manualHemisphere').value;
         const converted = utmToLatLon(
-          document.getElementById('eastingInput').value,
-          document.getElementById('northingInput').value,
-          document.getElementById('manualZone').value,
-          document.getElementById('manualHemisphere').value
+          easting,
+          northing,
+          zone,
+          hemisphere
         );
         lat = converted.lat;
         lon = converted.lon;
+        utmDetails = {
+          easting: Number(easting),
+          northing: Number(northing),
+          zone: Number(zone),
+          hemisphere
+        };
       } else {
         lat = parseDmsOrDecimal(document.getElementById('latInput').value);
         lon = parseDmsOrDecimal(document.getElementById('lonInput').value);
@@ -1353,7 +1408,7 @@
         return;
       }
 
-      addPoint({ name, lat, lon, source: 'Manual' });
+      addPoint({ name, lat, lon, ...utmDetails, source: 'Manual' });
       renderAll();
       map.setView([lat, lon], Math.max(map.getZoom(), 17));
     }
@@ -1398,6 +1453,7 @@
 
     function toggleJoinMode() {
       joinMode = !joinMode;
+      if (joinMode) resetSplitMode();
       elements.startJoinBtn.textContent = joinMode ? 'Stop Join Mode' : 'Start Join Mode';
       elements.startJoinBtn.classList.toggle('red', joinMode);
       elements.startJoinBtn.classList.toggle('amber', !joinMode);
@@ -1406,12 +1462,410 @@
       renderAll();
     }
 
+    function toggleSplitMode() {
+      if (!polygonLayer) {
+        setNotice(elements.polygonNotice, 'There is no polygon drawn on the map.', 'error');
+        return;
+      }
+
+      splitMode = !splitMode;
+      elements.splitPolygonBtn.textContent = splitMode ? 'Stop Split Mode' : 'Split Polygon';
+      elements.splitPolygonBtn.classList.toggle('amber', splitMode);
+      elements.splitPolygonBtn.classList.toggle('secondary', !splitMode);
+      if (splitMode) {
+        showAvailableSplitEdges();
+      } else {
+        clearSplitEdgeSelection();
+      }
+      setNotice(
+        elements.polygonNotice,
+        splitMode ? 'Select a highlighted boundary line on the map.' : 'Split mode stopped.',
+        splitMode ? 'good' : ''
+      );
+    }
+
+    function resetSplitMode() {
+      clearSplitEdgeSelection();
+      splitMode = false;
+      elements.splitPolygonBtn.textContent = 'Split Polygon';
+      elements.splitPolygonBtn.classList.remove('amber');
+      elements.splitPolygonBtn.classList.add('secondary');
+    }
+
+    function splitPolygon(part) {
+      if (!window.polygonClipping) {
+        setNotice(elements.polygonNotice, 'Polygon split library could not be loaded.', 'error');
+        return;
+      }
+
+      const points = part ? part.points : getBasePolygonPoints();
+      if (points.length < 3) return;
+
+      showSplitEdgeSelection(part, points);
+      setNotice(elements.polygonNotice, 'Select a highlighted boundary line on the map.', 'good');
+    }
+
+    function showAvailableSplitEdges() {
+      clearSplitEdgeSelection();
+      if (state.splitParts.length) {
+        state.splitParts.forEach(part => showSplitEdgeSelection(part, part.points, false));
+      } else {
+        showSplitEdgeSelection(null, getBasePolygonPoints(), false);
+      }
+    }
+
+    function getBasePolygonPoints() {
+      return getJoinedPoints().map((point, index) => ({
+        lat: point.lat,
+        lon: point.lon,
+        name: point.name || `P${index + 1}`
+      }));
+    }
+
+    function showSplitEdgeSelection(part, points, shouldClear = true) {
+      if (shouldClear) clearSplitEdgeSelection();
+      points.forEach((point, index) => {
+        const next = points[(index + 1) % points.length];
+        const label = `${getSplitPointName(point, index)}-${getSplitPointName(next, (index + 1) % points.length)}`;
+        const edge = L.polyline([[point.lat, point.lon], [next.lat, next.lon]], {
+          color: '#f59e0b',
+          weight: 18,
+          opacity: 0.85,
+          lineCap: 'round',
+          bubblingMouseEvents: false,
+          interactive: true
+        }).addTo(map);
+        edge.bringToFront();
+
+        edge.bindTooltip(label, {
+          permanent: true,
+          direction: 'center',
+          className: 'split-edge-label',
+          opacity: 1
+        });
+        edge.on('click', event => {
+          L.DomEvent.stop(event);
+          requestSplitExtent(part, points, index, label);
+        });
+        splitEdgeLayers.push(edge);
+      });
+    }
+
+    function clearSplitEdgeSelection() {
+      splitEdgeLayers.forEach(layer => map.removeLayer(layer));
+      splitEdgeLayers = [];
+    }
+
+    function requestSplitExtent(part, points, edgeIndex, edgeLabel) {
+      if (!window.polygonClipping) {
+        setNotice(elements.polygonNotice, 'Polygon split library could not be loaded.', 'error');
+        showAvailableSplitEdges();
+        return;
+      }
+
+      clearSplitEdgeSelection();
+      const unitLabel = getAreaUnitInputLabel();
+      const polygonAreaSqM = part ? part.areaSqM : state.areaSqM;
+      const polygonAreaText = formatArea(polygonAreaSqM);
+      const extentValue = prompt(
+        `Enter extent in ${unitLabel} for the part along ${edgeLabel}:\nTotal polygon area: ${polygonAreaText}`,
+        ''
+      );
+      if (extentValue === null) {
+        showAvailableSplitEdges();
+        return;
+      }
+      const extent = Number(extentValue);
+      const targetAreaSqM = convertAreaInputToSqM(extent);
+      if (!Number.isFinite(targetAreaSqM) || targetAreaSqM <= 0) {
+        setNotice(elements.polygonNotice, 'Enter a valid extent greater than zero.', 'error');
+        showAvailableSplitEdges();
+        return;
+      }
+      if (targetAreaSqM >= polygonAreaSqM) {
+        setNotice(elements.polygonNotice, `Extent must be less than the polygon area (${polygonAreaText}).`, 'error');
+        showAvailableSplitEdges();
+        return;
+      }
+
+      const splitResult = splitPolygonByTargetArea(points, edgeIndex, targetAreaSqM);
+      if (!splitResult) {
+        setNotice(elements.polygonNotice, 'The extent does not create two valid polygon parts.', 'error');
+        showAvailableSplitEdges();
+        return;
+      }
+
+      const details = getPolygonDetails(part);
+      const newParts = splitResult.map(partPoints => ({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        points: partPoints,
+        name: details.name,
+        kathaNo: details.kathaNo,
+        surveyNo: details.surveyNo,
+        remarks: details.remarks,
+        areaSqM: calculateSphericalArea(partPoints),
+        layer: null,
+        areaLabel: null,
+        detailsLabel: null
+      }));
+
+      if (part) {
+        removeSplitPartLayers(part);
+        state.splitParts = state.splitParts.filter(item => item.id !== part.id);
+      } else {
+        if (polygonLayer) map.removeLayer(polygonLayer);
+        if (areaLabel) map.removeLayer(areaLabel);
+        if (polygonNameLabel) map.removeLayer(polygonNameLabel);
+        polygonLayer = L.featureGroup().addTo(map);
+        areaLabel = null;
+        polygonNameLabel = null;
+      }
+
+      state.splitParts.push(...newParts);
+      state.splitParts.forEach((item, index) => {
+        if (!item.layer) renderSplitPart(item, index);
+      });
+      state.areaSqM = state.splitParts.reduce((total, item) => total + item.areaSqM, 0);
+      updateAreaDisplay();
+      resetSplitMode();
+      map.fitBounds(polygonLayer.getBounds(), { padding: [40, 40] });
+      setNotice(elements.polygonNotice, `Polygon split from ${edgeLabel} using an extent of ${extent} ${unitLabel}.`, 'good');
+    }
+
+    function splitPolygonByTargetArea(points, edgeIndex, targetAreaSqM) {
+      const projection = createLocalProjection(points);
+      const projected = points.map(point => projection.project(point));
+      const start = projected[edgeIndex];
+      const end = projected[(edgeIndex + 1) % projected.length];
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const length = Math.hypot(dx, dy);
+      if (length < 0.001) return null;
+
+      const direction = { x: dx / length, y: dy / length };
+      const signedArea = projected.reduce((total, point, index) => {
+        const next = projected[(index + 1) % projected.length];
+        return total + point.x * next.y - next.x * point.y;
+      }, 0);
+      const inward = signedArea >= 0
+        ? { x: -direction.y, y: direction.x }
+        : { x: direction.y, y: -direction.x };
+      const midpoint = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+      const maximumOffset = Math.max(...projected.map(point =>
+        (point.x - midpoint.x) * inward.x + (point.y - midpoint.y) * inward.y
+      ));
+      if (!Number.isFinite(maximumOffset) || maximumOffset <= 0) return null;
+
+      let low = 0;
+      let high = maximumOffset;
+      let bestResult = null;
+      let bestDifference = Infinity;
+
+      for (let iteration = 0; iteration < 55; iteration++) {
+        const offset = (low + high) / 2;
+        const result = splitPolygonByOffset(points, edgeIndex, offset, false);
+        if (!result) {
+          high = offset;
+          continue;
+        }
+
+        const nearEdgeArea = calculateSphericalArea(result[1]);
+        const difference = Math.abs(nearEdgeArea - targetAreaSqM);
+        if (difference < bestDifference) {
+          bestDifference = difference;
+          bestResult = { offset, result };
+        }
+        if (nearEdgeArea < targetAreaSqM) low = offset;
+        else high = offset;
+      }
+
+      if (!bestResult) return null;
+      return splitPolygonByOffset(points, edgeIndex, bestResult.offset, true);
+    }
+
+    function splitPolygonByOffset(points, edgeIndex, extentMeters, assignNames = true) {
+      const projection = createLocalProjection(points);
+      const projected = points.map((point, index) => {
+        const value = projection.project(point);
+        return { ...value, name: getSplitPointName(point, index) };
+      });
+      const start = projected[edgeIndex];
+      const end = projected[(edgeIndex + 1) % projected.length];
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const length = Math.hypot(dx, dy);
+      if (length < 0.001) return null;
+
+      const direction = { x: dx / length, y: dy / length };
+      const signedArea = projected.reduce((total, point, index) => {
+        const next = projected[(index + 1) % projected.length];
+        return total + point.x * next.y - next.x * point.y;
+      }, 0);
+      const inward = signedArea >= 0
+        ? { x: -direction.y, y: direction.x }
+        : { x: direction.y, y: -direction.x };
+      const midpoint = {
+        x: (start.x + end.x) / 2 + inward.x * extentMeters,
+        y: (start.y + end.y) / 2 + inward.y * extentMeters
+      };
+      const bounds = getProjectedBounds(projected);
+      const span = Math.max(Math.hypot(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 20, extentMeters * 8, 1000);
+      const subjectRing = projected.map(point => [point.x, point.y]);
+      subjectRing.push([...subjectRing[0]]);
+
+      const inwardHalf = buildHalfPlaneRing(midpoint, direction, inward, span);
+      const outwardHalf = buildHalfPlaneRing(midpoint, direction, { x: -inward.x, y: -inward.y }, span);
+      const inwardResult = polygonClipping.intersection([subjectRing], [inwardHalf]);
+      const outwardResult = polygonClipping.intersection([subjectRing], [outwardHalf]);
+      const inwardRing = getSingleSplitRing(inwardResult);
+      const outwardRing = getSingleSplitRing(outwardResult);
+      if (!inwardRing || !outwardRing) return null;
+
+      const generatedNames = new Map();
+      const firstPart = convertSplitRing(inwardRing, projection, projected, generatedNames, assignNames);
+      const secondPart = convertSplitRing(outwardRing, projection, projected, generatedNames, assignNames);
+      if (firstPart.length < 3 || secondPart.length < 3) return null;
+      if (calculateSphericalArea(firstPart) < 0.01 || calculateSphericalArea(secondPart) < 0.01) return null;
+      return [firstPart, secondPart];
+    }
+
+    function createLocalProjection(points) {
+      const latitudeOrigin = points.reduce((total, point) => total + point.lat, 0) / points.length;
+      const longitudeOrigin = points.reduce((total, point) => total + point.lon, 0) / points.length;
+      const latitudeRadians = latitudeOrigin * Math.PI / 180;
+      const radius = 6378137;
+      const longitudeScale = radius * Math.cos(latitudeRadians) * Math.PI / 180;
+      const latitudeScale = radius * Math.PI / 180;
+
+      return {
+        project: point => ({
+          x: (point.lon - longitudeOrigin) * longitudeScale,
+          y: (point.lat - latitudeOrigin) * latitudeScale
+        }),
+        unproject: point => ({
+          lat: latitudeOrigin + point.y / latitudeScale,
+          lon: longitudeOrigin + point.x / longitudeScale
+        })
+      };
+    }
+
+    function buildHalfPlaneRing(origin, direction, normal, span) {
+      const start = { x: origin.x - direction.x * span, y: origin.y - direction.y * span };
+      const end = { x: origin.x + direction.x * span, y: origin.y + direction.y * span };
+      return [
+        [start.x, start.y],
+        [end.x, end.y],
+        [end.x + normal.x * span, end.y + normal.y * span],
+        [start.x + normal.x * span, start.y + normal.y * span],
+        [start.x, start.y]
+      ];
+    }
+
+    function getSingleSplitRing(result) {
+      if (!result || result.length !== 1 || result[0].length !== 1) return null;
+      const ring = result[0][0];
+      return ring.length > 3 ? ring.slice(0, -1) : null;
+    }
+
+    function convertSplitRing(ring, projection, sourcePoints, generatedNames, assignNames = true) {
+      return ring.map(coordinate => {
+        const projectedPoint = { x: coordinate[0], y: coordinate[1] };
+        const original = sourcePoints.find(point => Math.hypot(point.x - projectedPoint.x, point.y - projectedPoint.y) < 0.25);
+        const key = `${projectedPoint.x.toFixed(3)},${projectedPoint.y.toFixed(3)}`;
+        if (assignNames && !original && !generatedNames.has(key)) generatedNames.set(key, `S${splitPointCounter++}`);
+        return {
+          ...projection.unproject(projectedPoint),
+          name: original ? original.name : generatedNames.get(key)
+        };
+      });
+    }
+
+    function getProjectedBounds(points) {
+      return points.reduce((bounds, point) => ({
+        minX: Math.min(bounds.minX, point.x),
+        minY: Math.min(bounds.minY, point.y),
+        maxX: Math.max(bounds.maxX, point.x),
+        maxY: Math.max(bounds.maxY, point.y)
+      }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+    }
+
+    function getSplitPointName(point, index) {
+      return String(point.name || `P${index + 1}`).trim();
+    }
+
+    function normalizeEdgeLabel(value) {
+      return String(value).replace(/\s+/g, '').toUpperCase();
+    }
+
+    function convertAreaInputToSqM(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return NaN;
+      const factors = {
+        acres: 4046.8564224,
+        sqm: 1,
+        sqft: 0.09290304,
+        sqyd: 0.83612736,
+        hectares: 10000
+      };
+      return number * (factors[elements.areaUnit.value] || factors.acres);
+    }
+
+    function getAreaUnitInputLabel() {
+      const labels = {
+        acres: 'acres',
+        sqm: 'square meters',
+        sqft: 'square feet',
+        sqyd: 'square yards',
+        hectares: 'hectares'
+      };
+      return labels[elements.areaUnit.value] || 'acres';
+    }
+
+    function renderSplitPart(part, index) {
+      const colors = ['#2563eb', '#f59e0b', '#16a34a', '#dc2626'];
+      const color = colors[index % colors.length];
+      part.layer = L.polygon(part.points.map(point => [point.lat, point.lon]), {
+        color,
+        fillColor: color,
+        fillOpacity: 0.22,
+        weight: 4
+      }).addTo(polygonLayer);
+      part.layer.on('click', event => handlePolygonClick(part, event));
+      part.areaLabel = L.tooltip({
+        permanent: true,
+        direction: 'center',
+        className: 'area-label',
+        opacity: 1,
+        interactive: false
+      })
+        .setLatLng(getPolygonCenter(part.points))
+        .setContent(formatArea(part.areaSqM))
+        .addTo(map);
+      updatePolygonNameLabel(part);
+    }
+
+    function removeSplitPartLayers(part) {
+      if (part.layer && polygonLayer && polygonLayer.removeLayer) polygonLayer.removeLayer(part.layer);
+      if (part.areaLabel) map.removeLayer(part.areaLabel);
+      if (part.detailsLabel) map.removeLayer(part.detailsLabel);
+      part.layer = null;
+      part.areaLabel = null;
+      part.detailsLabel = null;
+    }
+
+    function clearSplitParts() {
+      state.splitParts.forEach(removeSplitPartLayers);
+      state.splitParts = [];
+    }
+
     function finishPolygon() {
       if (state.joinOrder.length < 3) {
         setNotice(elements.polygonNotice, 'Select at least 3 points in boundary order before finishing.', 'error');
         return;
       }
 
+      clearSplitParts();
+      resetSplitMode();
       if (polygonLayer) map.removeLayer(polygonLayer);
       if (areaLabel) map.removeLayer(areaLabel);
       removePolygonNameLabel();
@@ -1423,7 +1877,7 @@
         fillOpacity: 0.28,
         weight: 4
       }).addTo(map);
-      polygonLayer.on('click', askForPolygonName);
+      polygonLayer.on('click', event => handlePolygonClick(null, event));
 
       const areaSqM = calculateSphericalArea(selected);
       const polygonCenter = getPolygonCenter(selected);
@@ -1457,6 +1911,8 @@
 
     function clearJoin() {
       state.joinOrder = [];
+      clearSplitParts();
+      resetSplitMode();
       if (previewLine) {
         map.removeLayer(previewLine);
         previewLine = null;
@@ -1479,6 +1935,8 @@
     function clearAll() {
       state.points = [];
       state.joinOrder = [];
+      clearSplitParts();
+      resetSplitMode();
       markerLayer.clearLayers();
       if (previewLine) map.removeLayer(previewLine);
       if (polygonLayer) map.removeLayer(polygonLayer);
@@ -1574,6 +2032,8 @@
     }
 
     function clearPolygonOnly() {
+      clearSplitParts();
+      resetSplitMode();
       if (polygonLayer) {
         map.removeLayer(polygonLayer);
         polygonLayer = null;
@@ -1653,71 +2113,80 @@
     }
 
     function exportPolygon() {
-      const data = getPolygonExportData();
-      if (!data) return;
+      const polygons = getPolygonExportData();
+      if (!polygons) return;
 
       const format = elements.polygonExportFormat.value;
-      const fileBase = sanitizeFileName(data.name || 'polygon');
+      const fileBase = sanitizeFileName(polygons.length === 1 && polygons[0].name ? polygons[0].name : 'polygons');
 
       if (format === 'kml') {
-        downloadBlob(new Blob([buildPolygonKml(data)], { type: 'application/vnd.google-earth.kml+xml' }), `${fileBase}.kml`);
+        downloadBlob(new Blob([buildPolygonKml(polygons)], { type: 'application/vnd.google-earth.kml+xml' }), `${fileBase}.kml`);
       } else if (format === 'shp') {
-        downloadBlob(buildPolygonShpZip(data, fileBase), `${fileBase}_shp.zip`);
+        downloadBlob(buildPolygonShpZip(polygons, fileBase), `${fileBase}_shp.zip`);
       } else if (format === 'dxf') {
-        downloadBlob(new Blob([buildPolygonDxf(data)], { type: 'application/dxf' }), `${fileBase}.dxf`);
+        downloadBlob(new Blob([buildPolygonDxf(polygons)], { type: 'application/octet-stream' }), `${fileBase}.dxf`);
       }
     }
 
     function getPolygonExportData() {
       const selected = getJoinedPoints();
-      if (!polygonLayer || selected.length < 3 || state.areaSqM <= 0) {
+      if (!polygonLayer || (!state.splitParts.length && selected.length < 3) || state.areaSqM <= 0) {
         setNotice(elements.polygonNotice, 'There is no polygon drawn on the map.', 'error');
         alert('There is no polygon drawn on the map.');
         return null;
       }
 
-      const ring = selected.map(point => ({ lat: point.lat, lon: point.lon }));
+      if (state.splitParts.length) {
+        return state.splitParts.map(part => createPolygonExportData(part.points, part));
+      }
+
+      return [createPolygonExportData(selected, {
+        name: state.polygonName,
+        kathaNo: state.polygonKathaNo,
+        surveyNo: state.polygonSurveyNo,
+        areaSqM: state.areaSqM,
+        remarks: state.polygonRemarks
+      })];
+    }
+
+    function createPolygonExportData(points, details) {
+      const ring = points.map(point => ({
+        lat: point.lat,
+        lon: point.lon,
+        easting: point.easting,
+        northing: point.northing,
+        zone: point.zone,
+        hemisphere: point.hemisphere
+      }));
       const first = ring[0];
       const last = ring[ring.length - 1];
       if (first.lat !== last.lat || first.lon !== last.lon) {
         ring.push({ lat: first.lat, lon: first.lon });
       }
 
-      const centerValue = getPolygonCenter(selected);
+      const centerValue = getPolygonCenter(points);
       const center = Array.isArray(centerValue)
         ? { lat: centerValue[0], lon: centerValue[1] }
         : { lat: centerValue.lat, lon: centerValue.lng };
 
       return {
-        name: state.polygonName,
-        kathaNo: state.polygonKathaNo,
-        surveyNo: state.polygonSurveyNo,
-        areaSqM: state.areaSqM,
-        areaText: formatArea(state.areaSqM),
+        name: details.name || '',
+        kathaNo: details.kathaNo || '',
+        surveyNo: details.surveyNo || '',
+        areaSqM: details.areaSqM,
+        areaText: formatArea(details.areaSqM),
         areaUnit: elements.areaUnit.value,
-        remarks: state.polygonRemarks,
+        remarks: details.remarks || '',
         ring,
         center,
         bounds: getCoordinateBounds(ring)
       };
     }
 
-    function buildPolygonKml(data) {
-      const coordinates = data.ring.map(point => `${point.lon},${point.lat},0`).join(' ');
-      return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <Style id="boundaryOnly">
-      <LineStyle>
-        <color>ff00a34a</color>
-        <width>3</width>
-      </LineStyle>
-      <PolyStyle>
-        <fill>0</fill>
-        <outline>1</outline>
-      </PolyStyle>
-    </Style>
-    <Placemark>
+    function buildPolygonKml(polygons) {
+      const placemarks = polygons.map(data => {
+        const coordinates = data.ring.map(point => `${point.lon},${point.lat},0`).join(' ');
+        return `    <Placemark>
       <name>${escapeXml(data.name)}</name>
       <styleUrl>#boundaryOnly</styleUrl>
       <ExtendedData>
@@ -1735,87 +2204,179 @@
           </LinearRing>
         </outerBoundaryIs>
       </Polygon>
-    </Placemark>
+    </Placemark>`;
+      }).join('\n');
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Style id="boundaryOnly">
+      <LineStyle>
+        <color>ff00a34a</color>
+        <width>3</width>
+      </LineStyle>
+      <PolyStyle>
+        <fill>0</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+${placemarks}
   </Document>
 </kml>`;
     }
 
-    function buildPolygonDxf(data) {
-      const vertices = data.ring.slice(0, -1).map(point => `10
-${formatDxfNumber(point.lon)}
-20
-${formatDxfNumber(point.lat)}`).join('\n');
-      const labelHeight = Math.max((data.bounds.maxX - data.bounds.minX + data.bounds.maxY - data.bounds.minY) / 80, 0.00005);
-      const labelLines = [
-        data.name,
-        data.kathaNo ? `Katha No: ${data.kathaNo}` : '',
-        data.surveyNo ? `Survey No: ${data.surveyNo}` : '',
-        `Area: ${data.areaText}`,
-        data.remarks ? `Remarks: ${data.remarks}` : ''
-      ].filter(Boolean);
-      const labels = labelLines.map((line, index) => `0
-TEXT
+    function buildPolygonDxf(polygons) {
+      const entities = polygons.map((data, polygonIndex) => {
+        const ring = isClosedRing(data.ring) ? data.ring.slice(0, -1) : data.ring;
+        const vertices = ring.map(point => {
+          const coordinate = getDxfCoordinate(point);
+          return `0
+VERTEX
 8
-POLYGON_LABEL
+POLYGON_${polygonIndex + 1}
 10
-${formatDxfNumber(data.center.lon)}
+${formatDxfNumber(coordinate.x)}
 20
-${formatDxfNumber(data.center.lat + labelHeight * (labelLines.length - index - 1))}
-40
-${formatDxfNumber(labelHeight)}
-1
-${escapeDxfText(line)}`).join('\n');
-      return `0
-SECTION
-2
-ENTITIES
-0
-LWPOLYLINE
+${formatDxfNumber(coordinate.y)}
+30
+0`;
+        }).join('\n');
+        return `0
+POLYLINE
 8
-POLYGON
-90
-${data.ring.length - 1}
+POLYGON_${polygonIndex + 1}
+66
+1
 70
 1
 ${vertices}
-${labels}
+0
+SEQEND
+8
+POLYGON_${polygonIndex + 1}`;
+      }).join('\n');
+      return normalizeDxfLineEndings(`0
+SECTION
+2
+HEADER
+9
+$ACADVER
+1
+AC1009
+0
+ENDSEC
+0
+SECTION
+2
+TABLES
+0
+TABLE
+2
+LTYPE
+70
+1
+0
+LTYPE
+2
+CONTINUOUS
+70
+0
+3
+Solid line
+72
+65
+73
+0
+40
+0
+0
+ENDTAB
+0
+TABLE
+2
+LAYER
+70
+${polygons.length}
+${polygons.map((_, index) => `0
+LAYER
+2
+POLYGON_${index + 1}
+70
+0
+62
+3
+6
+CONTINUOUS`).join('\n')}
+0
+ENDTAB
+0
+ENDSEC
+0
+SECTION
+2
+BLOCKS
+0
+ENDSEC
+0
+SECTION
+2
+ENTITIES
+${entities}
 0
 ENDSEC
 0
 EOF
-`;
+`);
     }
 
-    function buildPolygonShpZip(data, fileBase) {
+    function isClosedRing(ring) {
+      if (ring.length < 2) return false;
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      return Math.abs(first.lat - last.lat) < 1e-12 && Math.abs(first.lon - last.lon) < 1e-12;
+    }
+
+    function buildPolygonShpZip(polygons, fileBase) {
+      const bounds = getCombinedCoordinateBounds(polygons);
       const files = [
-        { name: `${fileBase}.shp`, data: buildShpFile(data.ring, data.bounds) },
-        { name: `${fileBase}.shx`, data: buildShxFile(data.ring, data.bounds) },
-        { name: `${fileBase}.dbf`, data: buildDbfFile(data) },
+        { name: `${fileBase}.shp`, data: buildShpFile(polygons, bounds) },
+        { name: `${fileBase}.shx`, data: buildShxFile(polygons, bounds) },
+        { name: `${fileBase}.dbf`, data: buildDbfFile(polygons) },
         { name: `${fileBase}.prj`, data: 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]' }
       ];
       return createZipBlob(files);
     }
 
-    function buildShpFile(ring, bounds) {
-      const contentBytes = 48 + ring.length * 16;
-      const totalBytes = 100 + 8 + contentBytes;
+    function buildShpFile(polygons, bounds) {
+      const contentSizes = polygons.map(data => 48 + data.ring.length * 16);
+      const totalBytes = 100 + contentSizes.reduce((total, size) => total + 8 + size, 0);
       const buffer = new ArrayBuffer(totalBytes);
       const view = new DataView(buffer);
       writeShpHeader(view, totalBytes / 2, bounds);
-      view.setInt32(100, 1, false);
-      view.setInt32(104, contentBytes / 2, false);
-      writePolygonRecordContent(view, 108, ring, bounds);
+      let cursor = 100;
+      polygons.forEach((data, index) => {
+        const contentBytes = contentSizes[index];
+        view.setInt32(cursor, index + 1, false);
+        view.setInt32(cursor + 4, contentBytes / 2, false);
+        writePolygonRecordContent(view, cursor + 8, data.ring, data.bounds);
+        cursor += 8 + contentBytes;
+      });
       return new Uint8Array(buffer);
     }
 
-    function buildShxFile(ring, bounds) {
-      const contentBytes = 48 + ring.length * 16;
-      const totalBytes = 108;
+    function buildShxFile(polygons, bounds) {
+      const totalBytes = 100 + polygons.length * 8;
       const buffer = new ArrayBuffer(totalBytes);
       const view = new DataView(buffer);
       writeShpHeader(view, totalBytes / 2, bounds);
-      view.setInt32(100, 50, false);
-      view.setInt32(104, contentBytes / 2, false);
+      let cursor = 100;
+      let shapeOffsetWords = 50;
+      polygons.forEach(data => {
+        const contentWords = (48 + data.ring.length * 16) / 2;
+        view.setInt32(cursor, shapeOffsetWords, false);
+        view.setInt32(cursor + 4, contentWords, false);
+        shapeOffsetWords += 4 + contentWords;
+        cursor += 8;
+      });
       return new Uint8Array(buffer);
     }
 
@@ -1847,18 +2408,18 @@ EOF
       });
     }
 
-    function buildDbfFile(data) {
+    function buildDbfFile(polygons) {
       const fields = [
-        { name: 'NAME', type: 'C', length: 80, decimals: 0, value: data.name },
-        { name: 'KATHA_NO', type: 'C', length: 40, decimals: 0, value: data.kathaNo },
-        { name: 'SURVEY_NO', type: 'C', length: 40, decimals: 0, value: data.surveyNo },
-        { name: 'AREA_SQM', type: 'N', length: 18, decimals: 2, value: data.areaSqM },
-        { name: 'AREA', type: 'C', length: 32, decimals: 0, value: data.areaText },
-        { name: 'REMARKS', type: 'C', length: 120, decimals: 0, value: data.remarks }
+        { name: 'NAME', type: 'C', length: 80, decimals: 0, getValue: data => data.name },
+        { name: 'KATHA_NO', type: 'C', length: 40, decimals: 0, getValue: data => data.kathaNo },
+        { name: 'SURVEY_NO', type: 'C', length: 40, decimals: 0, getValue: data => data.surveyNo },
+        { name: 'AREA_SQM', type: 'N', length: 18, decimals: 2, getValue: data => data.areaSqM },
+        { name: 'AREA', type: 'C', length: 32, decimals: 0, getValue: data => data.areaText },
+        { name: 'REMARKS', type: 'C', length: 120, decimals: 0, getValue: data => data.remarks }
       ];
       const recordLength = 1 + fields.reduce((total, field) => total + field.length, 0);
       const headerLength = 32 + fields.length * 32 + 1;
-      const bytes = new Uint8Array(headerLength + recordLength + 1);
+      const bytes = new Uint8Array(headerLength + recordLength * polygons.length + 1);
       const view = new DataView(bytes.buffer);
       const now = new Date();
 
@@ -1866,7 +2427,7 @@ EOF
       bytes[1] = now.getFullYear() - 1900;
       bytes[2] = now.getMonth() + 1;
       bytes[3] = now.getDate();
-      view.setUint32(4, 1, true);
+      view.setUint32(4, polygons.length, true);
       view.setUint16(8, headerLength, true);
       view.setUint16(10, recordLength, true);
 
@@ -1880,10 +2441,12 @@ EOF
 
       bytes[headerLength - 1] = 13;
       let cursor = headerLength;
-      bytes[cursor++] = 32;
-      fields.forEach(field => {
-        writeAscii(bytes, cursor, formatDbfField(field), field.length, 32);
-        cursor += field.length;
+      polygons.forEach(data => {
+        bytes[cursor++] = 32;
+        fields.forEach(field => {
+          writeAscii(bytes, cursor, formatDbfField({ ...field, value: field.getValue(data) }), field.length, 32);
+          cursor += field.length;
+        });
       });
       bytes[bytes.length - 1] = 26;
       return bytes;
@@ -1991,6 +2554,15 @@ EOF
       }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
     }
 
+    function getCombinedCoordinateBounds(polygons) {
+      return polygons.reduce((bounds, polygon) => ({
+        minX: Math.min(bounds.minX, polygon.bounds.minX),
+        minY: Math.min(bounds.minY, polygon.bounds.minY),
+        maxX: Math.max(bounds.maxX, polygon.bounds.maxX),
+        maxY: Math.max(bounds.maxY, polygon.bounds.maxY)
+      }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+    }
+
     function getZipTime() {
       const now = new Date();
       return (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2);
@@ -2018,11 +2590,72 @@ EOF
     }
 
     function formatDxfNumber(value) {
-      return Number(value).toFixed(8);
+      return Number(value).toFixed(3);
     }
 
-    function escapeDxfText(value) {
-      return cleanDbfText(value).replace(/[\\{}]/g, '');
+    function getDxfCoordinate(point) {
+      if (looksLikeEasting(Number(point.easting)) && looksLikeNorthing(Number(point.northing))) {
+        return {
+          x: Number(point.easting),
+          y: Number(point.northing)
+        };
+      }
+
+      const zone = Number(point.zone) || Number(elements.importZone.value) || Math.floor((point.lon + 180) / 6) + 1;
+      const hemisphere = point.hemisphere || elements.importHemisphere.value || (point.lat < 0 ? 'S' : 'N');
+      const utm = latLonToUtm(point.lat, point.lon, zone, hemisphere);
+      return {
+        x: utm.easting,
+        y: utm.northing
+      };
+    }
+
+    function latLonToUtm(lat, lon, zone, hemisphere) {
+      const latValue = Number(lat);
+      const lonValue = Number(lon);
+      const zoneValue = Number(zone) || Math.floor((lonValue + 180) / 6) + 1;
+      if (!Number.isFinite(latValue) || !Number.isFinite(lonValue) || !Number.isFinite(zoneValue)) {
+        return { easting: NaN, northing: NaN };
+      }
+
+      const a = 6378137.0;
+      const eccSquared = 0.00669438;
+      const k0 = 0.9996;
+      const eccPrimeSquared = eccSquared / (1 - eccSquared);
+      const latRad = latValue * Math.PI / 180;
+      const lonRad = lonValue * Math.PI / 180;
+      const longOrigin = (zoneValue - 1) * 6 - 180 + 3;
+      const longOriginRad = longOrigin * Math.PI / 180;
+      const n = a / Math.sqrt(1 - eccSquared * Math.sin(latRad) * Math.sin(latRad));
+      const t = Math.tan(latRad) * Math.tan(latRad);
+      const c = eccPrimeSquared * Math.cos(latRad) * Math.cos(latRad);
+      const aa = Math.cos(latRad) * (lonRad - longOriginRad);
+      const m = a * (
+        (1 - eccSquared / 4 - 3 * eccSquared * eccSquared / 64 - 5 * Math.pow(eccSquared, 3) / 256) * latRad
+        - (3 * eccSquared / 8 + 3 * eccSquared * eccSquared / 32 + 45 * Math.pow(eccSquared, 3) / 1024) * Math.sin(2 * latRad)
+        + (15 * eccSquared * eccSquared / 256 + 45 * Math.pow(eccSquared, 3) / 1024) * Math.sin(4 * latRad)
+        - (35 * Math.pow(eccSquared, 3) / 3072) * Math.sin(6 * latRad)
+      );
+
+      const easting = k0 * n * (
+        aa
+        + (1 - t + c) * Math.pow(aa, 3) / 6
+        + (5 - 18 * t + t * t + 72 * c - 58 * eccPrimeSquared) * Math.pow(aa, 5) / 120
+      ) + 500000.0;
+      let northing = k0 * (
+        m + n * Math.tan(latRad) * (
+          aa * aa / 2
+          + (5 - t + 9 * c + 4 * c * c) * Math.pow(aa, 4) / 24
+          + (61 - 58 * t + t * t + 600 * c - 330 * eccPrimeSquared) * Math.pow(aa, 6) / 720
+        )
+      );
+      if (String(hemisphere).toUpperCase() === 'S' || latValue < 0) northing += 10000000.0;
+
+      return { easting, northing };
+    }
+
+    function normalizeDxfLineEndings(value) {
+      return String(value).trim().replace(/\n/g, '\r\n') + '\r\n';
     }
 
     function escapeXml(value) {
@@ -2168,50 +2801,106 @@ EOF
       return Math.abs(total * radius * radius / 2);
     }
 
-    function askForPolygonName() {
+    function handlePolygonClick(part, event) {
+      if (event) L.DomEvent.stopPropagation(event);
+      if (splitMode) {
+        splitPolygon(part);
+        return;
+      }
+      askForPolygonName(part);
+    }
+
+    function askForPolygonName(part = null) {
       if (!polygonLayer) return;
-      const areaText = formatArea(state.areaSqM);
-      const name = prompt(`NAME (optional)\nAREA: ${areaText}`, state.polygonName);
+      const details = getPolygonDetails(part);
+      const areaText = formatArea(details.areaSqM);
+      const name = prompt(`NAME (optional)\nAREA: ${areaText}`, details.name);
       if (name === null) return;
-      const kathaNo = prompt(`KATHA NO (optional)\nAREA: ${areaText}`, state.polygonKathaNo);
+      const kathaNo = prompt(`KATHA NO (optional)\nAREA: ${areaText}`, details.kathaNo);
       if (kathaNo === null) return;
-      const surveyNo = prompt(`SURVEY NO (optional)\nAREA: ${areaText}`, state.polygonSurveyNo);
+      const surveyNo = prompt(`SURVEY NO (optional)\nAREA: ${areaText}`, details.surveyNo);
       if (surveyNo === null) return;
-      const remarks = prompt(`REMARKS (optional)\nAREA: ${areaText}`, state.polygonRemarks);
+      const remarks = prompt(`REMARKS (optional)\nAREA: ${areaText}`, details.remarks);
       if (remarks === null) return;
 
-      state.polygonName = name.trim();
-      state.polygonKathaNo = kathaNo.trim();
-      state.polygonSurveyNo = surveyNo.trim();
-      state.polygonRemarks = remarks.trim();
+      details.name = name.trim();
+      details.kathaNo = kathaNo.trim();
+      details.surveyNo = surveyNo.trim();
+      details.remarks = remarks.trim();
+      setPolygonDetails(part, details);
+      updatePolygonNameLabel(part);
+    }
 
-      if (!state.polygonName) {
-        if (polygonNameLabel) {
-          map.removeLayer(polygonNameLabel);
-          polygonNameLabel = null;
-        }
+    function getPolygonDetails(part) {
+      if (part) {
+        return {
+          name: part.name || '',
+          kathaNo: part.kathaNo || '',
+          surveyNo: part.surveyNo || '',
+          remarks: part.remarks || '',
+          areaSqM: part.areaSqM
+        };
+      }
+
+      return {
+        name: state.polygonName,
+        kathaNo: state.polygonKathaNo,
+        surveyNo: state.polygonSurveyNo,
+        remarks: state.polygonRemarks,
+        areaSqM: state.areaSqM
+      };
+    }
+
+    function setPolygonDetails(part, details) {
+      if (part) {
+        part.name = details.name;
+        part.kathaNo = details.kathaNo;
+        part.surveyNo = details.surveyNo;
+        part.remarks = details.remarks;
         return;
       }
 
-      updatePolygonNameLabel();
+      state.polygonName = details.name;
+      state.polygonKathaNo = details.kathaNo;
+      state.polygonSurveyNo = details.surveyNo;
+      state.polygonRemarks = details.remarks;
     }
 
-    function updatePolygonNameLabel() {
-      const selected = getJoinedPoints();
-      if (!polygonLayer || !state.polygonName || !selected.length) return;
-      if (polygonNameLabel) map.removeLayer(polygonNameLabel);
+    function updatePolygonNameLabel(part = null) {
+      const details = getPolygonDetails(part);
+      const points = part ? part.points : getJoinedPoints();
+      const hasAttributes = details.name || details.kathaNo || details.surveyNo || details.remarks;
+      const existingLabel = part ? part.detailsLabel : polygonNameLabel;
 
-      polygonNameLabel = L.tooltip({
+      if (existingLabel) map.removeLayer(existingLabel);
+      if (part) part.detailsLabel = null;
+      else polygonNameLabel = null;
+      if (!polygonLayer || !hasAttributes || !points.length) return;
+
+      const label = L.tooltip({
         permanent: true,
-        direction: 'center',
-        offset: [0, -28],
+        direction: 'top',
+        offset: [0, -12],
         className: 'area-label polygon-name-label',
         opacity: 1,
         interactive: false
       })
-        .setLatLng(getPolygonCenter(selected))
-        .setContent(escapeHtml(state.polygonName))
+        .setLatLng(getPolygonCenter(points))
+        .setContent(buildPolygonDetailsHtml(details))
         .addTo(map);
+
+      if (part) part.detailsLabel = label;
+      else polygonNameLabel = label;
+    }
+
+    function buildPolygonDetailsHtml(details) {
+      const rows = [];
+      if (details.name) rows.push(`<div><strong>Name:</strong> ${escapeHtml(details.name)}</div>`);
+      if (details.kathaNo) rows.push(`<div><strong>Katha No:</strong> ${escapeHtml(details.kathaNo)}</div>`);
+      if (details.surveyNo) rows.push(`<div><strong>Survey No:</strong> ${escapeHtml(details.surveyNo)}</div>`);
+      rows.push(`<div><strong>Area:</strong> ${escapeHtml(formatArea(details.areaSqM))}</div>`);
+      if (details.remarks) rows.push(`<div><strong>Remarks:</strong> ${escapeHtml(details.remarks)}</div>`);
+      return rows.join('');
     }
 
     function removePolygonNameLabel() {
@@ -2248,7 +2937,12 @@ EOF
 
     function updateAreaDisplay() {
       elements.areaValue.textContent = formatArea(state.areaSqM);
-      if (areaLabel) areaLabel.setContent(formatArea(state.areaSqM));
+      if (areaLabel && areaLabel.setContent) areaLabel.setContent(formatArea(state.areaSqM));
+      if (polygonNameLabel) polygonNameLabel.setContent(buildPolygonDetailsHtml(getPolygonDetails(null)));
+      state.splitParts.forEach(part => {
+        if (part.areaLabel) part.areaLabel.setContent(formatArea(part.areaSqM));
+        if (part.detailsLabel) part.detailsLabel.setContent(buildPolygonDetailsHtml(getPolygonDetails(part)));
+      });
     }
 
     function formatArea(areaSqM) {
