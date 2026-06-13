@@ -803,7 +803,7 @@
         </div>
         <div class="stat">
           <span>Area</span>
-          <strong id="areaValue">0 acres</strong>
+          <strong id="areaValue">0 Acres</strong>
         </div>
       </section>
 
@@ -3164,7 +3164,7 @@ EOF
       if (!Number.isFinite(areaSqM) || areaSqM <= 0) return zeroAreaLabel();
       const unit = elements.areaUnit.value;
       const units = {
-        acres: { factor: 0.000247105381, label: 'acres', decimals: 4 },
+        acres: { factor: 0.000247105381, label: 'Acres', decimals: 3 },
         sqm: { factor: 1, label: 'm²', decimals: 2 },
         sqft: { factor: 10.763910417, label: 'ft²', decimals: 2 },
         sqyd: { factor: 1.195990046, label: 'yd²', decimals: 2 },
@@ -3177,13 +3177,13 @@ EOF
     function zeroAreaLabel() {
       const unit = elements.areaUnit.value;
       const labels = {
-        acres: '0 acres',
+        acres: '0 Acres',
         sqm: '0 m²',
         sqft: '0 ft²',
         sqyd: '0 yd²',
         hectares: '0 ha'
       };
-      return labels[unit] || '0 acres';
+      return labels[unit] || '0 Acres';
     }
 
     function isLat(value) {
