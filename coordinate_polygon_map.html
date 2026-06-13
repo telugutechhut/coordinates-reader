@@ -300,6 +300,46 @@
       background: #f0fdf4;
     }
 
+    .polygon-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .polygon-card {
+      display: grid;
+      grid-template-columns: 1fr 58px;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .polygon-card.active {
+      border-color: #93c5fd;
+      background: #eff6ff;
+    }
+
+    .polygon-title {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .polygon-meta {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .empty-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
     .badge {
       display: grid;
       place-items: center;
@@ -434,11 +474,11 @@
     .point-label {
       border: 1px solid rgba(15, 23, 42, 0.24);
       border-radius: 5px;
-      padding: 3px 7px;
+      padding: 2px 5px;
       color: #0f172a;
       background: rgba(255, 255, 255, 0.92);
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
       line-height: 1.1;
       white-space: nowrap;
@@ -460,13 +500,13 @@
 
     .polygon-name-label {
       border-color: rgba(29, 78, 216, 0.34);
-      min-width: 170px;
-      max-width: 260px;
-      padding: 8px 10px;
+      min-width: 135px;
+      max-width: 210px;
+      padding: 5px 7px;
       color: #1e3a8a;
       background: rgba(239, 246, 255, 0.96);
-      font-size: 14px;
-      line-height: 1.35;
+      font-size: 11px;
+      line-height: 1.25;
       text-align: left;
       white-space: normal;
     }
@@ -486,6 +526,10 @@
       font-weight: 700;
       white-space: nowrap;
       pointer-events: none;
+    }
+
+    .leaflet-marker-icon.join-selected-marker {
+      filter: hue-rotate(175deg) saturate(1.9) drop-shadow(0 0 6px #f59e0b);
     }
 
     .popup-title {
@@ -898,6 +942,13 @@
             <label for="selectedOrder">Selected polygon order</label>
             <textarea id="selectedOrder" readonly placeholder="Selected point names will appear here"></textarea>
           </div>
+
+          <div class="block">
+            <label>Drawn polygons</label>
+            <div id="polygonList" class="polygon-list">
+              <div class="empty-note">No polygon drawn.</div>
+            </div>
+          </div>
         </section>
 
         <section class="block">
@@ -940,6 +991,16 @@
     const hybridGroup = L.layerGroup([imageryLayer, labelsLayer]).addTo(map);
 
     const markerLayer = L.layerGroup().addTo(map);
+    const smallPointIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [18, 30],
+      iconAnchor: [9, 30],
+      popupAnchor: [1, -26],
+      shadowSize: [30, 30],
+      shadowAnchor: [9, 30]
+    });
     let activeBase = 'hybrid';
     let previewLine = null;
     let polygonLayer = null;
@@ -953,6 +1014,9 @@
     const state = {
       points: [],
       joinOrder: [],
+      polygons: [],
+      activePolygonId: null,
+      polygonPoints: [],
       splitParts: [],
       areaSqM: 0,
       polygonName: '',
@@ -974,6 +1038,7 @@
       latLonFields: document.getElementById('latLonFields'),
       utmFields: document.getElementById('utmFields'),
       pointList: document.getElementById('pointList'),
+      polygonList: document.getElementById('polygonList'),
       selectedOrder: document.getElementById('selectedOrder'),
       areaUnit: document.getElementById('areaUnit'),
       polygonExportFormat: document.getElementById('polygonExportFormat'),
@@ -1417,6 +1482,7 @@
       const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
       const finalPoint = { ...point, id };
       const marker = L.marker([finalPoint.lat, finalPoint.lon], {
+        icon: smallPointIcon,
         title: finalPoint.name
       });
 
@@ -1424,7 +1490,7 @@
       marker.bindTooltip(escapeHtml(finalPoint.name), {
         permanent: true,
         direction: 'right',
-        offset: [10, 0],
+        offset: [8, -2],
         className: 'point-label',
         opacity: 1
       });
@@ -1445,6 +1511,10 @@
 
     function selectForJoin(pointId) {
       if (!joinMode) return;
+      if (state.joinOrder[0] === pointId && state.joinOrder.length >= 3) {
+        finishPolygon();
+        return;
+      }
       if (state.joinOrder.includes(pointId)) return;
       state.joinOrder.push(pointId);
       updateJoinPreview();
@@ -1463,7 +1533,7 @@
     }
 
     function toggleSplitMode() {
-      if (!polygonLayer) {
+      if (!getActivePolygon()) {
         setNotice(elements.polygonNotice, 'There is no polygon drawn on the map.', 'error');
         return;
       }
@@ -1514,12 +1584,148 @@
       }
     }
 
-    function getBasePolygonPoints() {
-      return getJoinedPoints().map((point, index) => ({
+    function copyPolygonPoint(point, index = 0) {
+      return {
         lat: point.lat,
         lon: point.lon,
-        name: point.name || `P${index + 1}`
-      }));
+        name: point.name || `P${index + 1}`,
+        easting: point.easting,
+        northing: point.northing,
+        zone: point.zone,
+        hemisphere: point.hemisphere
+      };
+    }
+
+    function getBasePolygonPoints() {
+      return state.polygonPoints.map((point, index) => copyPolygonPoint(point, index));
+    }
+
+    function getActivePolygon() {
+      return state.polygons.find(polygon => polygon.id === state.activePolygonId) || null;
+    }
+
+    function setActivePolygon(polygon) {
+      state.activePolygonId = polygon ? polygon.id : null;
+      if (polygon && !polygon.splitParts) polygon.splitParts = [];
+      polygonLayer = polygon ? polygon.layer : null;
+      areaLabel = polygon ? polygon.areaLabel : null;
+      polygonNameLabel = polygon ? polygon.detailsLabel : null;
+      state.polygonPoints = polygon ? polygon.points : [];
+      state.splitParts = polygon ? polygon.splitParts : [];
+      state.areaSqM = polygon ? polygon.areaSqM : 0;
+      state.polygonName = polygon ? polygon.name || '' : '';
+      state.polygonKathaNo = polygon ? polygon.kathaNo || '' : '';
+      state.polygonSurveyNo = polygon ? polygon.surveyNo || '' : '';
+      state.polygonRemarks = polygon ? polygon.remarks || '' : '';
+      updateAreaDisplay();
+    }
+
+    function syncActivePolygonState() {
+      const polygon = getActivePolygon();
+      if (!polygon) return;
+      polygon.layer = polygonLayer;
+      polygon.areaLabel = areaLabel;
+      polygon.detailsLabel = polygonNameLabel;
+      polygon.points = state.polygonPoints;
+      polygon.splitParts = state.splitParts;
+      polygon.areaSqM = state.areaSqM;
+      polygon.name = state.polygonName;
+      polygon.kathaNo = state.polygonKathaNo;
+      polygon.surveyNo = state.polygonSurveyNo;
+      polygon.remarks = state.polygonRemarks;
+    }
+
+    function removePolygonLayers(polygon) {
+      if (!polygon) return;
+      if (polygon.layer) {
+        map.removeLayer(polygon.layer);
+        polygon.layer = null;
+      }
+      if (polygon.areaLabel) {
+        map.removeLayer(polygon.areaLabel);
+        polygon.areaLabel = null;
+      }
+      if (polygon.detailsLabel) {
+        map.removeLayer(polygon.detailsLabel);
+        polygon.detailsLabel = null;
+      }
+      (polygon.splitParts || []).forEach(part => {
+        if (part.layer && map.hasLayer(part.layer)) map.removeLayer(part.layer);
+        if (part.areaLabel) map.removeLayer(part.areaLabel);
+        if (part.detailsLabel) map.removeLayer(part.detailsLabel);
+        part.layer = null;
+        part.areaLabel = null;
+        part.detailsLabel = null;
+      });
+    }
+
+    function clearStoredPolygons() {
+      state.polygons.forEach(removePolygonLayers);
+      state.polygons = [];
+      setActivePolygon(null);
+    }
+
+    function removeStoredPolygon(polygonId) {
+      const polygon = state.polygons.find(item => item.id === polygonId);
+      if (!polygon) return;
+      const wasActive = polygon.id === state.activePolygonId;
+      removePolygonLayers(polygon);
+      state.polygons = state.polygons.filter(item => item.id !== polygonId);
+      setActivePolygon(wasActive ? state.polygons[state.polygons.length - 1] || null : getActivePolygon());
+      renderAll();
+      setNotice(elements.polygonNotice, 'Selected polygon removed.', '');
+    }
+
+    function handleStoredPolygonClick(polygonId, event) {
+      if (event) L.DomEvent.stopPropagation(event);
+      const polygon = state.polygons.find(item => item.id === polygonId);
+      if (!polygon) return;
+      setActivePolygon(polygon);
+      if (splitMode) {
+        splitPolygon(null);
+        return;
+      }
+      askForPolygonName(null);
+      renderAll();
+    }
+
+    function getPolygonDisplayName(polygon, index) {
+      return polygon.name || `Polygon ${index + 1}`;
+    }
+
+    function renderPolygonList() {
+      if (!elements.polygonList) return;
+      elements.polygonList.innerHTML = '';
+      if (!state.polygons.length) {
+        elements.polygonList.innerHTML = '<div class="empty-note">No polygon drawn.</div>';
+        return;
+      }
+
+      state.polygons.forEach((polygon, index) => {
+        const card = document.createElement('div');
+        card.className = `polygon-card${polygon.id === state.activePolygonId ? ' active' : ''}`;
+        const partText = polygon.splitParts && polygon.splitParts.length
+          ? `${polygon.splitParts.length} part(s)`
+          : `${polygon.points.length} point(s)`;
+        card.innerHTML = `
+          <div>
+            <div class="polygon-title">${escapeHtml(getPolygonDisplayName(polygon, index))}</div>
+            <div class="polygon-meta">${escapeHtml(formatArea(polygon.areaSqM))}<br>${escapeHtml(partText)}</div>
+          </div>
+          <button class="tiny red" type="button" title="Delete polygon">Delete</button>
+        `;
+        card.addEventListener('click', event => {
+          if (event.target.tagName.toLowerCase() === 'button') return;
+          setActivePolygon(polygon);
+          if (polygon.layer && polygon.layer.getBounds) map.fitBounds(polygon.layer.getBounds(), { padding: [40, 40] });
+          renderAll();
+        });
+        card.querySelector('button').addEventListener('click', event => {
+          event.stopPropagation();
+          removeStoredPolygon(polygon.id);
+        });
+        elements.polygonList.appendChild(card);
+      });
     }
 
     function showSplitEdgeSelection(part, points, shouldClear = true) {
@@ -1595,9 +1801,12 @@
         return;
       }
 
+      const activePolygon = getActivePolygon();
+      const parentPolygonId = part ? part.parentPolygonId || state.activePolygonId : state.activePolygonId;
       const details = getPolygonDetails(part);
       const newParts = splitResult.map(partPoints => ({
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        parentPolygonId,
         points: partPoints,
         name: details.name,
         kathaNo: details.kathaNo,
@@ -1619,6 +1828,11 @@
         polygonLayer = L.featureGroup().addTo(map);
         areaLabel = null;
         polygonNameLabel = null;
+        if (activePolygon) {
+          activePolygon.layer = polygonLayer;
+          activePolygon.areaLabel = null;
+          activePolygon.detailsLabel = null;
+        }
       }
 
       state.splitParts.push(...newParts);
@@ -1626,10 +1840,12 @@
         if (!item.layer) renderSplitPart(item, index);
       });
       state.areaSqM = state.splitParts.reduce((total, item) => total + item.areaSqM, 0);
+      syncActivePolygonState();
       updateAreaDisplay();
       resetSplitMode();
       map.fitBounds(polygonLayer.getBounds(), { padding: [40, 40] });
       setNotice(elements.polygonNotice, `Polygon split from ${edgeLabel} using an extent of ${extent} ${unitLabel}.`, 'good');
+      renderAll();
     }
 
     function splitPolygonByTargetArea(points, edgeIndex, targetAreaSqM) {
@@ -1856,6 +2072,7 @@
     function clearSplitParts() {
       state.splitParts.forEach(removeSplitPartLayers);
       state.splitParts = [];
+      syncActivePolygonState();
     }
 
     function finishPolygon() {
@@ -1864,26 +2081,35 @@
         return;
       }
 
-      clearSplitParts();
       resetSplitMode();
-      if (polygonLayer) map.removeLayer(polygonLayer);
-      if (areaLabel) map.removeLayer(areaLabel);
-      removePolygonNameLabel();
       const selected = getJoinedPoints();
-      const latLngs = selected.map(point => [point.lat, point.lon]);
-      polygonLayer = L.polygon(latLngs, {
+      const polygonPoints = selected.map((point, index) => copyPolygonPoint(point, index));
+      const latLngs = polygonPoints.map(point => [point.lat, point.lon]);
+      const areaSqM = calculateSphericalArea(polygonPoints);
+      const polygonCenter = getPolygonCenter(polygonPoints);
+      const polygon = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        points: polygonPoints,
+        splitParts: [],
+        areaSqM,
+        name: '',
+        kathaNo: '',
+        surveyNo: '',
+        remarks: '',
+        layer: null,
+        areaLabel: null,
+        detailsLabel: null
+      };
+
+      polygon.layer = L.polygon(latLngs, {
         color: '#22c55e',
         fillColor: '#16a34a',
         fillOpacity: 0.28,
         weight: 4
       }).addTo(map);
-      polygonLayer.on('click', event => handlePolygonClick(null, event));
+      polygon.layer.on('click', event => handleStoredPolygonClick(polygon.id, event));
 
-      const areaSqM = calculateSphericalArea(selected);
-      const polygonCenter = getPolygonCenter(selected);
-      state.areaSqM = areaSqM;
-      updateAreaDisplay();
-      areaLabel = L.tooltip({
+      polygon.areaLabel = L.tooltip({
         permanent: true,
         direction: 'center',
         className: 'area-label',
@@ -1893,13 +2119,20 @@
         .setLatLng(polygonCenter)
         .setContent(formatArea(areaSqM))
         .addTo(map);
-      map.fitBounds(polygonLayer.getBounds(), { padding: [40, 40] });
+      state.polygons.push(polygon);
+      setActivePolygon(polygon);
+      map.fitBounds(polygon.layer.getBounds(), { padding: [40, 40] });
       joinMode = false;
       elements.startJoinBtn.textContent = 'Start Join Mode';
       elements.startJoinBtn.classList.remove('red');
       elements.startJoinBtn.classList.add('amber');
       elements.joinBanner.classList.remove('active');
       setNotice(elements.polygonNotice, `Polygon completed from ${selected.length} selected point(s). Area: ${formatArea(areaSqM)}.`, 'good');
+      state.joinOrder = [];
+      if (previewLine) {
+        map.removeLayer(previewLine);
+        previewLine = null;
+      }
       renderAll();
     }
 
@@ -1911,47 +2144,23 @@
 
     function clearJoin() {
       state.joinOrder = [];
-      clearSplitParts();
       resetSplitMode();
       if (previewLine) {
         map.removeLayer(previewLine);
         previewLine = null;
       }
-      if (polygonLayer) {
-        map.removeLayer(polygonLayer);
-        polygonLayer = null;
-      }
-      if (areaLabel) {
-        map.removeLayer(areaLabel);
-        areaLabel = null;
-      }
-      removePolygonNameLabel();
-      state.areaSqM = 0;
-      updateAreaDisplay();
       renderAll();
-      setNotice(elements.polygonNotice, 'Polygon selection cleared. Start join mode and select points again.', '');
+      setNotice(elements.polygonNotice, 'Current join selection cleared. Stored polygons are unchanged.', '');
     }
 
     function clearAll() {
       state.points = [];
       state.joinOrder = [];
-      clearSplitParts();
       resetSplitMode();
       markerLayer.clearLayers();
       if (previewLine) map.removeLayer(previewLine);
-      if (polygonLayer) map.removeLayer(polygonLayer);
-      if (areaLabel) map.removeLayer(areaLabel);
-      if (polygonNameLabel) map.removeLayer(polygonNameLabel);
       previewLine = null;
-      polygonLayer = null;
-      areaLabel = null;
-      polygonNameLabel = null;
-      state.polygonName = '';
-      state.polygonKathaNo = '';
-      state.polygonSurveyNo = '';
-      state.polygonRemarks = '';
-      state.areaSqM = 0;
-      updateAreaDisplay();
+      clearStoredPolygons();
       renderAll();
       setNotice(elements.polygonNotice, 'All points and polygon data cleared.', '');
     }
@@ -2009,6 +2218,9 @@
 
       state.points.forEach(point => {
         const selectedIndex = state.joinOrder.indexOf(point.id);
+        const markerElement = point.marker.getElement();
+        if (markerElement) markerElement.classList.toggle('join-selected-marker', selectedIndex >= 0);
+        point.marker.setZIndexOffset(selectedIndex >= 0 ? 1000 + selectedIndex : 0);
         if (joinMode) {
           point.marker.closePopup();
           point.marker.unbindPopup();
@@ -2018,6 +2230,7 @@
           point.marker.bindPopup(getPopupHtml(point, selectedIndex));
         }
       });
+      renderPolygonList();
     }
 
     function removePoint(pointId) {
@@ -2026,25 +2239,13 @@
       markerLayer.removeLayer(point.marker);
       state.points = state.points.filter(item => item.id !== pointId);
       state.joinOrder = state.joinOrder.filter(id => id !== pointId);
-      clearPolygonOnly();
       updateJoinPreview();
       renderAll();
     }
 
     function clearPolygonOnly() {
-      clearSplitParts();
       resetSplitMode();
-      if (polygonLayer) {
-        map.removeLayer(polygonLayer);
-        polygonLayer = null;
-      }
-      if (areaLabel) {
-        map.removeLayer(areaLabel);
-        areaLabel = null;
-      }
-      removePolygonNameLabel();
-      state.areaSqM = 0;
-      updateAreaDisplay();
+      clearStoredPolygons();
     }
 
     function getPopupHtml(point, selectedIndex = state.joinOrder.indexOf(point.id)) {
@@ -2129,24 +2330,22 @@
     }
 
     function getPolygonExportData() {
-      const selected = getJoinedPoints();
-      if (!polygonLayer || (!state.splitParts.length && selected.length < 3) || state.areaSqM <= 0) {
+      const polygons = [];
+      state.polygons.forEach(polygon => {
+        if (polygon.splitParts && polygon.splitParts.length) {
+          polygon.splitParts.forEach(part => polygons.push(createPolygonExportData(part.points, part)));
+        } else if (polygon.points.length >= 3 && polygon.areaSqM > 0) {
+          polygons.push(createPolygonExportData(polygon.points, polygon));
+        }
+      });
+
+      if (!polygons.length) {
         setNotice(elements.polygonNotice, 'There is no polygon drawn on the map.', 'error');
         alert('There is no polygon drawn on the map.');
         return null;
       }
 
-      if (state.splitParts.length) {
-        return state.splitParts.map(part => createPolygonExportData(part.points, part));
-      }
-
-      return [createPolygonExportData(selected, {
-        name: state.polygonName,
-        kathaNo: state.polygonKathaNo,
-        surveyNo: state.polygonSurveyNo,
-        areaSqM: state.areaSqM,
-        remarks: state.polygonRemarks
-      })];
+      return polygons;
     }
 
     function createPolygonExportData(points, details) {
@@ -2803,6 +3002,10 @@ EOF
 
     function handlePolygonClick(part, event) {
       if (event) L.DomEvent.stopPropagation(event);
+      if (part && part.parentPolygonId) {
+        const parentPolygon = state.polygons.find(polygon => polygon.id === part.parentPolygonId);
+        if (parentPolygon) setActivePolygon(parentPolygon);
+      }
       if (splitMode) {
         splitPolygon(part);
         return;
@@ -2864,18 +3067,22 @@ EOF
       state.polygonKathaNo = details.kathaNo;
       state.polygonSurveyNo = details.surveyNo;
       state.polygonRemarks = details.remarks;
+      syncActivePolygonState();
     }
 
     function updatePolygonNameLabel(part = null) {
       const details = getPolygonDetails(part);
-      const points = part ? part.points : getJoinedPoints();
+      const points = part ? part.points : getBasePolygonPoints();
       const hasAttributes = details.name || details.kathaNo || details.surveyNo || details.remarks;
       const existingLabel = part ? part.detailsLabel : polygonNameLabel;
 
       if (existingLabel) map.removeLayer(existingLabel);
       if (part) part.detailsLabel = null;
       else polygonNameLabel = null;
-      if (!polygonLayer || !hasAttributes || !points.length) return;
+      if (!polygonLayer || !hasAttributes || !points.length) {
+        if (!part) syncActivePolygonState();
+        return;
+      }
 
       const label = L.tooltip({
         permanent: true,
@@ -2890,7 +3097,11 @@ EOF
         .addTo(map);
 
       if (part) part.detailsLabel = label;
-      else polygonNameLabel = label;
+      else {
+        polygonNameLabel = label;
+        syncActivePolygonState();
+      }
+      renderPolygonList();
     }
 
     function buildPolygonDetailsHtml(details) {
@@ -2912,6 +3123,7 @@ EOF
       state.polygonKathaNo = '';
       state.polygonSurveyNo = '';
       state.polygonRemarks = '';
+      syncActivePolygonState();
     }
 
     function getPolygonCenter(points) {
@@ -2937,12 +3149,15 @@ EOF
 
     function updateAreaDisplay() {
       elements.areaValue.textContent = formatArea(state.areaSqM);
-      if (areaLabel && areaLabel.setContent) areaLabel.setContent(formatArea(state.areaSqM));
-      if (polygonNameLabel) polygonNameLabel.setContent(buildPolygonDetailsHtml(getPolygonDetails(null)));
-      state.splitParts.forEach(part => {
-        if (part.areaLabel) part.areaLabel.setContent(formatArea(part.areaSqM));
-        if (part.detailsLabel) part.detailsLabel.setContent(buildPolygonDetailsHtml(getPolygonDetails(part)));
+      state.polygons.forEach(polygon => {
+        if (polygon.areaLabel && polygon.areaLabel.setContent) polygon.areaLabel.setContent(formatArea(polygon.areaSqM));
+        if (polygon.detailsLabel) polygon.detailsLabel.setContent(buildPolygonDetailsHtml(getPolygonDetails(polygon)));
+        (polygon.splitParts || []).forEach(part => {
+          if (part.areaLabel) part.areaLabel.setContent(formatArea(part.areaSqM));
+          if (part.detailsLabel) part.detailsLabel.setContent(buildPolygonDetailsHtml(getPolygonDetails(part)));
+        });
       });
+      renderPolygonList();
     }
 
     function formatArea(areaSqM) {
