@@ -937,6 +937,13 @@
               <option value="sqyd">Square yards</option>
               <option value="hectares">Hectares</option>
             </select>
+            <label for="lengthUnit">Length unit</label>
+            <select id="lengthUnit">
+              <option value="gunterLinks">Gunter links</option>
+              <option value="metricLinks">Metric links</option>
+              <option value="meters" selected>Meters</option>
+              <option value="feet">Feet</option>
+            </select>
             <div class="button-row">
               <button id="startJoinBtn" class="amber" type="button">Start Join Mode</button>
               <button id="finishPolygonBtn" class="green" type="button" disabled>Finish Polygon</button>
@@ -1067,6 +1074,7 @@
       polygonList: document.getElementById('polygonList'),
       selectedOrder: document.getElementById('selectedOrder'),
       areaUnit: document.getElementById('areaUnit'),
+      lengthUnit: document.getElementById('lengthUnit'),
       polygonExportFormat: document.getElementById('polygonExportFormat'),
       polygonNotice: document.getElementById('polygonNotice'),
       joinBanner: document.getElementById('joinBanner'),
@@ -1113,6 +1121,7 @@
     document.getElementById('sidebarBackdrop').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
     document.getElementById('closeSidebarBtn').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
     elements.areaUnit.addEventListener('change', updateAreaDisplay);
+    elements.lengthUnit.addEventListener('change', updateLengthDisplay);
 
     async function importFile() {
       const file = elements.sourceFile.files[0];
@@ -2610,8 +2619,14 @@
 
     function formatJoinDistance(meters) {
       if (!Number.isFinite(meters)) return '';
-      if (meters >= 1000) return `${(meters / 1000).toFixed(3)} km`;
-      return `${meters.toFixed(2)} m`;
+      const units = {
+        gunterLinks: { factor: 1 / 0.201168, label: 'Gunter links', decimals: 2 },
+        metricLinks: { factor: 1 / 0.20, label: 'Metric links', decimals: 2 },
+        meters: { factor: 1, label: 'm', decimals: 2 },
+        feet: { factor: 3.280839895, label: 'ft', decimals: 2 }
+      };
+      const selected = units[elements.lengthUnit.value] || units.meters;
+      return `${(meters * selected.factor).toFixed(selected.decimals)} ${selected.label}`;
     }
 
     function getJoinedPoints() {
@@ -3600,6 +3615,17 @@ EOF
         });
       });
       renderPolygonList();
+    }
+
+    function updateLengthDisplay() {
+      updateJoinPreview();
+      state.polygons.forEach(polygon => {
+        if (polygon.splitParts && polygon.splitParts.length) {
+          polygon.splitParts.forEach(renderPolygonDistanceLabels);
+        } else {
+          renderPolygonDistanceLabels(polygon);
+        }
+      });
     }
 
     function formatArea(areaSqM) {
