@@ -445,6 +445,42 @@
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.2);
     }
 
+    .map-tool-controls {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 1200;
+      display: grid;
+      grid-template-columns: 32px;
+      gap: 5px;
+    }
+
+    .map-tool-controls button {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      min-width: 32px;
+      min-height: 32px;
+      padding: 0;
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      border-radius: 6px;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .map-tool-controls button:disabled {
+      opacity: 0.42;
+    }
+
+    body.sidebar-open .map-tool-controls,
+    body.sidebar-open .mobile-tools-toggle {
+      display: none;
+    }
+
     .sidebar-backdrop {
       display: none;
     }
@@ -473,7 +509,42 @@
     }
 
     .leaflet-popup-content {
-      min-width: 170px;
+      min-width: 190px;
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.22);
+    }
+
+    .leaflet-popup-tip {
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+    }
+
+    .point-popup {
+      padding: 10px 11px;
+    }
+
+    .point-popup-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 5px;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .point-popup-row span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .point-popup-row strong {
+      color: var(--ink);
+      font-weight: 700;
+      text-align: right;
     }
 
     .point-label {
@@ -534,17 +605,25 @@
     }
 
     .join-distance-label {
-      border: 1px solid rgba(245, 158, 11, 0.55);
-      border-radius: 4px;
-      padding: 1px 4px;
+      border: 0;
+      padding: 0;
       color: #78350f;
-      background: rgba(255, 251, 235, 0.95);
-      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.16);
+      background: transparent;
+      box-shadow: none;
       font-size: 9px;
       font-weight: 700;
       line-height: 1.1;
       white-space: nowrap;
       pointer-events: none;
+    }
+
+    .join-distance-label .distance-label-text {
+      display: block;
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      border-radius: 4px;
+      padding: 1px 4px;
+      background: rgba(255, 251, 235, 0.95);
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.16);
       transform-origin: center center;
     }
 
@@ -552,9 +631,83 @@
       filter: hue-rotate(175deg) saturate(1.9) drop-shadow(0 0 6px #f59e0b);
     }
 
+    .leaflet-marker-icon.delete-target-marker {
+      filter: hue-rotate(315deg) saturate(2.2) drop-shadow(0 0 7px #dc2626);
+    }
+
     .popup-title {
       font-weight: 700;
       margin-bottom: 4px;
+    }
+
+    .fmb-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .fmb-dialog[hidden] {
+      display: none;
+    }
+
+    .fmb-dialog-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.46);
+    }
+
+    .fmb-dialog-card {
+      position: relative;
+      z-index: 1;
+      width: min(420px, calc(100vw - 28px));
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 24px 58px rgba(15, 23, 42, 0.28);
+    }
+
+    .fmb-dialog-card h2 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .fmb-dialog-card p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .fmb-side-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .fmb-side-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      margin: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      background: #f8fafc;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: none;
+    }
+
+    .fmb-side-option input {
+      width: auto;
+      min-height: 0;
+      margin: 0;
     }
 
     @media (max-width: 980px) {
@@ -595,6 +748,10 @@
 
       .mobile-tools-toggle {
         display: block;
+      }
+
+      .map-tool-controls {
+        top: 58px;
       }
 
       #map {
@@ -926,9 +1083,9 @@
         </section>
 
         <section id="polygonPanel" class="panel">
-          <h2>Manual Polygon Joining</h2>
+          <h2>Polygon Settings</h2>
           <div class="block">
-            <div id="polygonNotice" class="notice">Start join mode, then click map points in boundary order. The polygon is calculated only from selected points.</div>
+            <div id="polygonNotice" class="notice">Use the floating map buttons for polygon tools. Units, export, and lists are managed here.</div>
             <label for="areaUnit">Area unit</label>
             <select id="areaUnit">
               <option value="acres">Acres</option>
@@ -944,18 +1101,10 @@
               <option value="meters" selected>Meters</option>
               <option value="feet">Feet</option>
             </select>
-            <div class="button-row">
-              <button id="startJoinBtn" class="amber" type="button">Start Join Mode</button>
-              <button id="finishPolygonBtn" class="green" type="button" disabled>Finish Polygon</button>
-            </div>
             <div class="grid3" style="margin-top: 10px;">
-              <button id="undoJoinBtn" class="secondary" type="button" disabled>Undo</button>
+              <button id="finishPolygonBtn" class="green" type="button" disabled>Finish Polygon</button>
               <button id="clearJoinBtn" class="secondary" type="button">Clear Join</button>
               <button id="clearAllBtn" class="red" type="button">Clear All</button>
-            </div>
-            <div class="button-row">
-              <button id="splitPolygonBtn" class="secondary translucent" type="button">Split Polygon</button>
-              <button id="mergePolygonBtn" class="secondary translucent" type="button">Merge Polygon</button>
             </div>
             <label for="polygonExportFormat">Export polygon</label>
             <div class="button-row">
@@ -979,6 +1128,13 @@
               <div class="empty-note">No polygon drawn.</div>
             </div>
           </div>
+
+          <div class="block">
+            <label>Project lines</label>
+            <div id="fmbLineList" class="polygon-list">
+              <div class="empty-note">No extra line drawn.</div>
+            </div>
+          </div>
         </section>
 
         <section class="block">
@@ -995,9 +1151,44 @@
     <section class="map-wrap">
       <div id="map"></div>
       <button id="mobileToolsToggle" class="mobile-tools-toggle" type="button">Tools</button>
+      <div class="map-tool-controls">
+        <button id="startJoinBtn" class="amber" type="button" title="Polygon join mode">&#9633;</button>
+        <button id="splitPolygonBtn" class="secondary translucent" type="button" title="Split polygon">&#9986;</button>
+        <button id="mergePolygonBtn" class="secondary translucent" type="button" title="Merge polygons">&#8644;</button>
+        <button id="triangulationBtn" class="secondary translucent" type="button" title="Triangulation">&#9651;</button>
+        <button id="offsetBtn" class="secondary translucent" type="button" title="Offset">&#8869;</button>
+        <button id="deletePolygonBtn" class="secondary translucent" type="button" title="Delete polygon">&#9633;&#215;</button>
+        <button id="deleteLineBtn" class="secondary translucent" type="button" title="Delete line">&#9473;&#215;</button>
+        <button id="deletePointBtn" class="secondary translucent" type="button" title="Delete point">&#8226;&#215;</button>
+        <button id="mapUndoBtn" type="button" title="Undo">↶</button>
+        <button id="mapRedoBtn" type="button" title="Redo">↷</button>
+      </div>
       <div id="joinBanner" class="join-banner">Join mode is active. Click points in the exact polygon order.</div>
     </section>
   </main>
+
+  <div id="fmbDialog" class="fmb-dialog" hidden>
+    <div id="fmbDialogBackdrop" class="fmb-dialog-backdrop"></div>
+    <form id="fmbDialogForm" class="fmb-dialog-card">
+      <h2 id="fmbDialogTitle">Offset</h2>
+      <p id="fmbDialogSummary"></p>
+      <label id="fmbFromPointLabel" for="fmbFromPointSelect">From point</label>
+      <select id="fmbFromPointSelect"></select>
+      <label id="fmbCutDistanceLabel" for="fmbCutDistance">Cut point distance (<span id="fmbLengthUnitLabel">meters</span>)</label>
+      <input id="fmbCutDistance" type="number" step="0.001" min="0" placeholder="0.000">
+      <label id="fmbPerpendicularDistanceLabel" for="fmbPerpendicularDistance">Perpendicular distance</label>
+      <input id="fmbPerpendicularDistance" type="number" step="0.001" min="0" placeholder="0.000">
+      <label id="fmbSideLabel">Side from selected direction</label>
+      <div class="fmb-side-row">
+        <label class="fmb-side-option"><input type="radio" name="fmbOffsetSide" value="left" checked> Left</label>
+        <label class="fmb-side-option"><input type="radio" name="fmbOffsetSide" value="right"> Right</label>
+      </div>
+      <div class="button-row">
+        <button id="fmbDialogCancel" class="secondary" type="button">Cancel</button>
+        <button id="fmbDialogSubmit" class="green" type="submit">Create Point</button>
+      </div>
+    </form>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1043,6 +1234,22 @@
     let mergeSelection = [];
     let splitEdgeLayers = [];
     let splitPointCounter = 1;
+    let triangulationMode = false;
+    let triangulationSelection = [];
+    let triangulationPointCounter = 1;
+    let offsetMode = false;
+    let offsetPointCounter = 1;
+    let offsetSelectableLayers = [];
+    let fmbLines = [];
+    let fmbLineCounter = 1;
+    let deletePolygonMode = false;
+    let deleteLineMode = false;
+    let deletePointMode = false;
+    let deleteLineTargetLayers = [];
+    let undoStack = [];
+    let redoStack = [];
+    let isRestoringHistory = false;
+    const historyLimit = 60;
 
     const state = {
       points: [],
@@ -1072,17 +1279,40 @@
       utmFields: document.getElementById('utmFields'),
       pointList: document.getElementById('pointList'),
       polygonList: document.getElementById('polygonList'),
+      fmbLineList: document.getElementById('fmbLineList'),
       selectedOrder: document.getElementById('selectedOrder'),
       areaUnit: document.getElementById('areaUnit'),
       lengthUnit: document.getElementById('lengthUnit'),
       polygonExportFormat: document.getElementById('polygonExportFormat'),
       polygonNotice: document.getElementById('polygonNotice'),
       joinBanner: document.getElementById('joinBanner'),
+      mapUndoBtn: document.getElementById('mapUndoBtn'),
+      mapRedoBtn: document.getElementById('mapRedoBtn'),
       startJoinBtn: document.getElementById('startJoinBtn'),
       splitPolygonBtn: document.getElementById('splitPolygonBtn'),
       mergePolygonBtn: document.getElementById('mergePolygonBtn'),
+      triangulationBtn: document.getElementById('triangulationBtn'),
+      offsetBtn: document.getElementById('offsetBtn'),
+      deletePolygonBtn: document.getElementById('deletePolygonBtn'),
+      deleteLineBtn: document.getElementById('deleteLineBtn'),
+      deletePointBtn: document.getElementById('deletePointBtn'),
       finishPolygonBtn: document.getElementById('finishPolygonBtn'),
-      undoJoinBtn: document.getElementById('undoJoinBtn')
+      undoJoinBtn: document.getElementById('undoJoinBtn'),
+      fmbDialog: document.getElementById('fmbDialog'),
+      fmbDialogBackdrop: document.getElementById('fmbDialogBackdrop'),
+      fmbDialogForm: document.getElementById('fmbDialogForm'),
+      fmbDialogTitle: document.getElementById('fmbDialogTitle'),
+      fmbDialogSummary: document.getElementById('fmbDialogSummary'),
+      fmbFromPointLabel: document.getElementById('fmbFromPointLabel'),
+      fmbFromPointSelect: document.getElementById('fmbFromPointSelect'),
+      fmbCutDistanceLabel: document.getElementById('fmbCutDistanceLabel'),
+      fmbCutDistance: document.getElementById('fmbCutDistance'),
+      fmbPerpendicularDistanceLabel: document.getElementById('fmbPerpendicularDistanceLabel'),
+      fmbPerpendicularDistance: document.getElementById('fmbPerpendicularDistance'),
+      fmbSideLabel: document.getElementById('fmbSideLabel'),
+      fmbLengthUnitLabel: document.getElementById('fmbLengthUnitLabel'),
+      fmbDialogCancel: document.getElementById('fmbDialogCancel'),
+      fmbDialogSubmit: document.getElementById('fmbDialogSubmit')
     };
 
     if (window.pdfjsLib) {
@@ -1113,15 +1343,323 @@
     document.getElementById('startJoinBtn').addEventListener('click', toggleJoinMode);
     document.getElementById('splitPolygonBtn').addEventListener('click', toggleSplitMode);
     document.getElementById('mergePolygonBtn').addEventListener('click', toggleMergeMode);
+    document.getElementById('triangulationBtn').addEventListener('click', toggleTriangulationMode);
+    document.getElementById('offsetBtn').addEventListener('click', toggleOffsetMode);
+    document.getElementById('deletePolygonBtn').addEventListener('click', toggleDeletePolygonMode);
+    document.getElementById('deleteLineBtn').addEventListener('click', toggleDeleteLineMode);
+    document.getElementById('deletePointBtn').addEventListener('click', toggleDeletePointMode);
     document.getElementById('finishPolygonBtn').addEventListener('click', finishPolygon);
-    document.getElementById('undoJoinBtn').addEventListener('click', undoJoin);
+    if (elements.undoJoinBtn) elements.undoJoinBtn.addEventListener('click', undoJoin);
     document.getElementById('clearJoinBtn').addEventListener('click', clearJoin);
     document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+    document.getElementById('mapUndoBtn').addEventListener('click', performMapUndo);
+    document.getElementById('mapRedoBtn').addEventListener('click', performMapRedo);
     document.getElementById('mobileToolsToggle').addEventListener('click', () => document.body.classList.add('sidebar-open'));
     document.getElementById('sidebarBackdrop').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
     document.getElementById('closeSidebarBtn').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
     elements.areaUnit.addEventListener('change', updateAreaDisplay);
     elements.lengthUnit.addEventListener('change', updateLengthDisplay);
+    elements.mapUndoBtn.innerHTML = '&#8630;';
+    elements.mapRedoBtn.innerHTML = '&#8631;';
+    updateModeButtons();
+    updateHistoryButtons();
+
+    function recordHistory() {
+      if (isRestoringHistory) return;
+      undoStack.push(captureHistoryState());
+      if (undoStack.length > historyLimit) undoStack.shift();
+      redoStack = [];
+      updateHistoryButtons();
+    }
+
+    function performMapUndo() {
+      if (!undoStack.length) return;
+      const current = captureHistoryState();
+      const previous = undoStack.pop();
+      redoStack.push(current);
+      restoreHistoryState(previous);
+      setNotice(elements.polygonNotice, 'Undo completed.', '');
+    }
+
+    function performMapRedo() {
+      if (!redoStack.length) return;
+      const current = captureHistoryState();
+      const next = redoStack.pop();
+      undoStack.push(current);
+      restoreHistoryState(next);
+      setNotice(elements.polygonNotice, 'Redo completed.', '');
+    }
+
+    function updateHistoryButtons() {
+      if (!elements.mapUndoBtn || !elements.mapRedoBtn) return;
+      elements.mapUndoBtn.disabled = undoStack.length === 0;
+      elements.mapRedoBtn.disabled = redoStack.length === 0;
+    }
+
+    function captureHistoryState() {
+      return {
+        points: state.points.map(serializePoint),
+        joinOrder: [...state.joinOrder],
+        polygons: state.polygons.map(serializePolygon),
+        activePolygonId: state.activePolygonId,
+        triangulationSelection: [...triangulationSelection],
+        mergeSelection: [...mergeSelection],
+        fmbLines: fmbLines.map(serializeFmbLine),
+        counters: {
+          splitPointCounter,
+          triangulationPointCounter,
+          offsetPointCounter,
+          fmbLineCounter
+        },
+        modes: {
+          joinMode,
+          splitMode,
+          mergeMode,
+          triangulationMode,
+          offsetMode,
+          deletePolygonMode,
+          deleteLineMode,
+          deletePointMode
+        }
+      };
+    }
+
+    function serializePoint(point) {
+      const { marker, ...data } = point;
+      return { ...data };
+    }
+
+    function serializePolygon(polygon) {
+      return {
+        id: polygon.id,
+        points: polygon.points.map(point => ({ ...point })),
+        splitParts: (polygon.splitParts || []).map(part => ({
+          id: part.id,
+          parentPolygonId: part.parentPolygonId,
+          points: part.points.map(point => ({ ...point })),
+          name: part.name || '',
+          kathaNo: part.kathaNo || '',
+          surveyNo: part.surveyNo || '',
+          remarks: part.remarks || '',
+          areaSqM: part.areaSqM
+        })),
+        areaSqM: polygon.areaSqM,
+        name: polygon.name || '',
+        kathaNo: polygon.kathaNo || '',
+        surveyNo: polygon.surveyNo || '',
+        remarks: polygon.remarks || ''
+      };
+    }
+
+    function serializeFmbLine(line) {
+      return {
+        id: line.id,
+        type: line.type,
+        name: line.name,
+        start: { ...line.start },
+        end: { ...line.end },
+        lengthMeters: line.lengthMeters,
+        color: line.color
+      };
+    }
+
+    function restoreHistoryState(snapshot) {
+      isRestoringHistory = true;
+      clearSplitEdgeSelection();
+      clearOffsetSelectableLines();
+      clearDeleteLineTargets();
+      closeFmbDialog();
+      if (previewLine) map.removeLayer(previewLine);
+      previewLine = null;
+      clearJoinDistanceLabels();
+      markerLayer.clearLayers();
+      state.polygons.forEach(removePolygonLayers);
+      state.polygons = [];
+      clearFmbLines();
+      state.points = [];
+
+      splitPointCounter = snapshot.counters.splitPointCounter;
+      triangulationPointCounter = snapshot.counters.triangulationPointCounter;
+      offsetPointCounter = snapshot.counters.offsetPointCounter;
+      fmbLineCounter = snapshot.counters.fmbLineCounter;
+
+      snapshot.points.forEach(point => addPoint({ ...point }));
+      state.joinOrder = snapshot.joinOrder.filter(id => state.points.some(point => point.id === id));
+      triangulationSelection = snapshot.triangulationSelection.filter(id => state.points.some(point => point.id === id));
+      mergeSelection = [...snapshot.mergeSelection];
+
+      snapshot.polygons.forEach(polygonData => {
+        const polygon = restorePolygonFromSnapshot(polygonData);
+        state.polygons.push(polygon);
+      });
+
+      snapshot.fmbLines.forEach(line => {
+        createFmbLine(line.start, line.end, {
+          id: line.id,
+          type: line.type,
+          name: line.name,
+          lengthMeters: line.lengthMeters,
+          color: line.color
+        });
+      });
+      fmbLineCounter = snapshot.counters.fmbLineCounter;
+
+      joinMode = snapshot.modes.joinMode;
+      splitMode = snapshot.modes.splitMode;
+      mergeMode = snapshot.modes.mergeMode;
+      triangulationMode = snapshot.modes.triangulationMode;
+      offsetMode = snapshot.modes.offsetMode;
+      deletePolygonMode = !!snapshot.modes.deletePolygonMode;
+      deleteLineMode = !!snapshot.modes.deleteLineMode;
+      deletePointMode = !!snapshot.modes.deletePointMode;
+      updateModeButtons();
+      setActivePolygon(state.polygons.find(polygon => polygon.id === snapshot.activePolygonId) || state.polygons[state.polygons.length - 1] || null);
+      updateJoinPreview();
+      renderAll();
+      if (splitMode) showAvailableSplitEdges();
+      if (offsetMode) showOffsetSelectableLines();
+      if (mergeMode) updateMergeSelectionStyles();
+      if (deletePolygonMode) updateDeletePolygonStyles();
+      if (deleteLineMode) showDeleteLineTargets();
+      isRestoringHistory = false;
+      updateHistoryButtons();
+    }
+
+    function restorePolygonFromSnapshot(data) {
+      const polygon = {
+        id: data.id,
+        points: data.points.map(point => ({ ...point })),
+        splitParts: (data.splitParts || []).map(part => ({
+          id: part.id,
+          parentPolygonId: part.parentPolygonId || data.id,
+          points: part.points.map(point => ({ ...point })),
+          name: part.name || '',
+          kathaNo: part.kathaNo || '',
+          surveyNo: part.surveyNo || '',
+          remarks: part.remarks || '',
+          areaSqM: part.areaSqM,
+          layer: null,
+          areaLabel: null,
+          detailsLabel: null,
+          distanceLabels: []
+        })),
+        areaSqM: data.areaSqM,
+        name: data.name || '',
+        kathaNo: data.kathaNo || '',
+        surveyNo: data.surveyNo || '',
+        remarks: data.remarks || '',
+        layer: null,
+        areaLabel: null,
+        detailsLabel: null,
+        distanceLabels: []
+      };
+
+      if (polygon.splitParts.length) {
+        polygon.layer = L.featureGroup().addTo(map);
+        polygon.splitParts.forEach((part, index) => renderSplitPartInParent(part, polygon, index));
+        polygon.areaSqM = polygon.splitParts.reduce((total, part) => total + part.areaSqM, 0);
+      } else {
+        renderStoredPolygonLayer(polygon);
+      }
+      return polygon;
+    }
+
+    function renderStoredPolygonLayer(polygon) {
+      polygon.layer = L.polygon(polygon.points.map(point => [point.lat, point.lon]), {
+        color: '#22c55e',
+        fillColor: '#16a34a',
+        fillOpacity: 0.28,
+        weight: 4
+      }).addTo(map);
+      polygon.layer.on('click', event => handleStoredPolygonClick(polygon.id, event));
+      polygon.areaLabel = L.tooltip({
+        permanent: true,
+        direction: 'center',
+        className: 'area-label',
+        opacity: 1,
+        interactive: false
+      })
+        .setLatLng(getPolygonCenter(polygon.points))
+        .setContent(formatArea(polygon.areaSqM))
+        .addTo(map);
+      renderPolygonDistanceLabels(polygon);
+      refreshPolygonDetailsLabel(polygon, polygon.points);
+    }
+
+    function renderSplitPartInParent(part, parentPolygon, index) {
+      const colors = ['#2563eb', '#f59e0b', '#16a34a', '#dc2626'];
+      const color = colors[index % colors.length];
+      part.layer = L.polygon(part.points.map(point => [point.lat, point.lon]), {
+        color,
+        fillColor: color,
+        fillOpacity: 0.22,
+        weight: 4
+      }).addTo(parentPolygon.layer);
+      part.layer.on('click', event => handlePolygonClick(part, event));
+      part.areaLabel = L.tooltip({
+        permanent: true,
+        direction: 'center',
+        className: 'area-label',
+        opacity: 1,
+        interactive: false
+      })
+        .setLatLng(getPolygonCenter(part.points))
+        .setContent(formatArea(part.areaSqM))
+        .addTo(map);
+      renderPolygonDistanceLabels(part);
+      refreshPolygonDetailsLabel(part, part.points);
+    }
+
+    function updateModeButtons() {
+      elements.startJoinBtn.innerHTML = joinMode ? '&#9632;' : '&#9633;';
+      elements.startJoinBtn.title = joinMode ? 'Stop polygon join mode' : 'Polygon join mode';
+      elements.startJoinBtn.classList.toggle('red', joinMode);
+      elements.startJoinBtn.classList.toggle('amber', !joinMode);
+      elements.joinBanner.classList.toggle('active', joinMode);
+
+      elements.splitPolygonBtn.innerHTML = splitMode ? '&#10005;' : '&#9986;';
+      elements.splitPolygonBtn.title = splitMode ? 'Stop split mode' : 'Split polygon';
+      elements.splitPolygonBtn.classList.toggle('amber', splitMode);
+      elements.splitPolygonBtn.classList.toggle('secondary', !splitMode);
+
+      elements.mergePolygonBtn.innerHTML = '&#8644;';
+      elements.mergePolygonBtn.title = mergeMode ? 'Merge selected polygons' : 'Merge polygons';
+      elements.mergePolygonBtn.classList.toggle('amber', mergeMode);
+      elements.mergePolygonBtn.classList.toggle('secondary', !mergeMode);
+
+      elements.triangulationBtn.innerHTML = triangulationMode ? '&#10005;' : '&#9651;';
+      elements.triangulationBtn.title = triangulationMode ? 'Stop triangulation' : 'Triangulation';
+      elements.triangulationBtn.classList.toggle('amber', triangulationMode);
+      elements.triangulationBtn.classList.toggle('secondary', !triangulationMode);
+
+      elements.offsetBtn.innerHTML = offsetMode ? '&#10005;' : '&#8869;';
+      elements.offsetBtn.title = offsetMode ? 'Stop offset' : 'Offset';
+      elements.offsetBtn.classList.toggle('amber', offsetMode);
+      elements.offsetBtn.classList.toggle('secondary', !offsetMode);
+
+      elements.deletePolygonBtn.innerHTML = deletePolygonMode ? '&#10005;' : '&#9633;&#215;';
+      elements.deletePolygonBtn.title = deletePolygonMode ? 'Stop delete polygon' : 'Delete polygon';
+      elements.deletePolygonBtn.classList.toggle('red', deletePolygonMode);
+      elements.deletePolygonBtn.classList.toggle('secondary', !deletePolygonMode);
+
+      elements.deleteLineBtn.innerHTML = deleteLineMode ? '&#10005;' : '&#9473;&#215;';
+      elements.deleteLineBtn.title = deleteLineMode ? 'Stop delete line' : 'Delete line';
+      elements.deleteLineBtn.classList.toggle('red', deleteLineMode);
+      elements.deleteLineBtn.classList.toggle('secondary', !deleteLineMode);
+
+      elements.deletePointBtn.innerHTML = deletePointMode ? '&#10005;' : '&#8226;&#215;';
+      elements.deletePointBtn.title = deletePointMode ? 'Stop delete point' : 'Delete point';
+      elements.deletePointBtn.classList.toggle('red', deletePointMode);
+      elements.deletePointBtn.classList.toggle('secondary', !deletePointMode);
+    }
+
+    function closeFmbDialog() {
+      if (!elements.fmbDialog) return;
+      elements.fmbDialog.hidden = true;
+      elements.fmbDialogForm.onsubmit = null;
+      elements.fmbDialogCancel.onclick = null;
+      elements.fmbDialogBackdrop.onclick = null;
+    }
 
     async function importFile() {
       const file = elements.sourceFile.files[0];
@@ -1143,6 +1681,7 @@
           throw new Error('Unsupported file type. Use CSV, Excel, or PDF.');
         }
 
+        recordHistory();
         imported.forEach(addPoint);
         renderAll();
         fitMap();
@@ -1510,13 +2049,14 @@
         return;
       }
 
+      recordHistory();
       addPoint({ name, lat, lon, ...utmDetails, source: 'Manual' });
       renderAll();
       map.setView([lat, lon], Math.max(map.getZoom(), 17));
     }
 
     function addPoint(point) {
-      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+      const id = point.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
       const finalPoint = { ...point, id };
       const marker = L.marker([finalPoint.lat, finalPoint.lon], {
         icon: smallPointIcon,
@@ -1532,7 +2072,18 @@
         opacity: 1
       });
       marker.on('click', event => {
-        if (joinMode) {
+        if (deletePointMode) {
+          L.DomEvent.stop(event);
+          marker.closePopup();
+          map.closePopup();
+          removePoint(finalPoint.id);
+          refreshDeletePointTargets();
+        } else if (triangulationMode) {
+          L.DomEvent.stop(event);
+          marker.closePopup();
+          map.closePopup();
+          selectForTriangulation(finalPoint.id);
+        } else if (joinMode) {
           L.DomEvent.stop(event);
           marker.closePopup();
           map.closePopup();
@@ -1553,14 +2104,37 @@
         return;
       }
       if (state.joinOrder.includes(pointId)) {
+        recordHistory();
         state.joinOrder = state.joinOrder.filter(id => id !== pointId);
         updateJoinPreview();
         renderAll();
         return;
       }
+      recordHistory();
       state.joinOrder.push(pointId);
       updateJoinPreview();
       renderAll();
+    }
+
+    function selectForTriangulation(pointId) {
+      if (!triangulationMode) return;
+      if (triangulationSelection.includes(pointId)) {
+        recordHistory();
+        triangulationSelection = triangulationSelection.filter(id => id !== pointId);
+        renderAll();
+        setNotice(elements.polygonNotice, 'Triangulation mode: click two existing points.', '');
+        return;
+      }
+
+      recordHistory();
+      triangulationSelection.push(pointId);
+      renderAll();
+      if (triangulationSelection.length < 2) {
+        setNotice(elements.polygonNotice, 'First point selected. Click the second point for triangulation.', 'good');
+        return;
+      }
+
+      requestTriangulationDistances();
     }
 
     function toggleJoinMode() {
@@ -1568,8 +2142,11 @@
       if (joinMode) {
         resetSplitMode();
         resetMergeMode();
+        resetTriangulationMode();
+        resetOffsetMode();
+        resetDeleteModes();
       }
-      elements.startJoinBtn.textContent = joinMode ? 'Stop Join Mode' : 'Start Join Mode';
+      updateModeButtons();
       elements.startJoinBtn.classList.toggle('red', joinMode);
       elements.startJoinBtn.classList.toggle('amber', !joinMode);
       elements.joinBanner.classList.toggle('active', joinMode);
@@ -1584,8 +2161,13 @@
       }
 
       splitMode = !splitMode;
-      if (splitMode) resetMergeMode();
-      elements.splitPolygonBtn.textContent = splitMode ? 'Stop Split Mode' : 'Split Polygon';
+      if (splitMode) {
+        resetMergeMode();
+        resetTriangulationMode();
+        resetOffsetMode();
+        resetDeleteModes();
+      }
+      updateModeButtons();
       elements.splitPolygonBtn.classList.toggle('amber', splitMode);
       elements.splitPolygonBtn.classList.toggle('secondary', !splitMode);
       if (splitMode) {
@@ -1603,7 +2185,7 @@
     function resetSplitMode() {
       clearSplitEdgeSelection();
       splitMode = false;
-      elements.splitPolygonBtn.textContent = 'Split Polygon';
+      updateModeButtons();
       elements.splitPolygonBtn.classList.remove('amber');
       elements.splitPolygonBtn.classList.add('secondary');
     }
@@ -1635,6 +2217,7 @@
         lat: point.lat,
         lon: point.lon,
         name: point.name || `P${index + 1}`,
+        sourceId: point.sourceId || point.id,
         easting: point.easting,
         northing: point.northing,
         zone: point.zone,
@@ -1705,9 +2288,10 @@
       setActivePolygon(null);
     }
 
-    function removeStoredPolygon(polygonId) {
+    function removeStoredPolygon(polygonId, shouldRecord = true) {
       const polygon = state.polygons.find(item => item.id === polygonId);
       if (!polygon) return;
+      if (shouldRecord) recordHistory();
       const wasActive = polygon.id === state.activePolygonId;
       removePolygonLayers(polygon);
       state.polygons = state.polygons.filter(item => item.id !== polygonId);
@@ -1721,12 +2305,13 @@
       if (!polygon || !polygon.splitParts) return;
       const part = polygon.splitParts.find(item => item.id === partId);
       if (!part) return;
+      recordHistory();
       const wasActive = polygon.id === state.activePolygonId;
       if (!wasActive) setActivePolygon(polygon);
       removeSplitPartLayers(part, polygon);
       polygon.splitParts = polygon.splitParts.filter(item => item.id !== partId);
       if (!polygon.splitParts.length) {
-        removeStoredPolygon(parentPolygonId);
+        removeStoredPolygon(parentPolygonId, false);
         return;
       }
       polygon.areaSqM = polygon.splitParts.reduce((total, item) => total + item.areaSqM, 0);
@@ -1740,6 +2325,121 @@
       if (!item) return;
       if (item.type === 'part') removeStoredSplitPart(item.polygon.id, item.part.id);
       else removeStoredPolygon(item.polygon.id);
+    }
+
+    function removePointFromStoredPolygons(deletedPoint) {
+      if (!deletedPoint || !state.polygons.length) return { changed: false, removed: 0 };
+      const activePolygonId = state.activePolygonId;
+      let changed = false;
+      let removed = 0;
+      const remainingPolygons = [];
+
+      state.polygons.forEach(polygon => {
+        let polygonTouched = false;
+        const baseCount = polygon.points.length;
+        polygon.points = polygon.points.filter(point => !isPolygonVertexForDeletedPoint(point, deletedPoint));
+        if (polygon.points.length !== baseCount) polygonTouched = true;
+
+        if (polygon.splitParts && polygon.splitParts.length) {
+          const remainingParts = [];
+          polygon.splitParts.forEach(part => {
+            const partCount = part.points.length;
+            part.points = part.points.filter(point => !isPolygonVertexForDeletedPoint(point, deletedPoint));
+            if (part.points.length !== partCount) polygonTouched = true;
+
+            if (part.points.length < 3) {
+              removeSplitPartLayers(part, polygon);
+              removed += 1;
+            } else {
+              if (part.points.length !== partCount) refreshSplitPartGeometry(part, polygon);
+              remainingParts.push(part);
+            }
+          });
+
+          polygon.splitParts = remainingParts;
+          if (!polygon.splitParts.length) {
+            removePolygonLayers(polygon);
+            removed += 1;
+            changed = changed || polygonTouched;
+            return;
+          }
+
+          polygon.areaSqM = polygon.splitParts.reduce((total, part) => total + part.areaSqM, 0);
+          changed = changed || polygonTouched;
+          remainingPolygons.push(polygon);
+          return;
+        }
+
+        if (polygonTouched) {
+          if (polygon.points.length < 3) {
+            removePolygonLayers(polygon);
+            removed += 1;
+            changed = true;
+            return;
+          }
+          refreshStoredPolygonGeometry(polygon);
+          changed = true;
+        }
+
+        remainingPolygons.push(polygon);
+      });
+
+      state.polygons = remainingPolygons;
+      const nextActive = state.polygons.find(polygon => polygon.id === activePolygonId) || state.polygons[state.polygons.length - 1] || null;
+      setActivePolygon(nextActive);
+      return { changed, removed };
+    }
+
+    function isPolygonVertexForDeletedPoint(polygonPoint, deletedPoint) {
+      if (polygonPoint.sourceId && polygonPoint.sourceId === deletedPoint.id) return true;
+      const sameName = polygonPoint.name && deletedPoint.name && String(polygonPoint.name).trim() === String(deletedPoint.name).trim();
+      const sameLocation = Math.abs(Number(polygonPoint.lat) - Number(deletedPoint.lat)) < 1e-10
+        && Math.abs(Number(polygonPoint.lon) - Number(deletedPoint.lon)) < 1e-10;
+      return sameName && sameLocation;
+    }
+
+    function refreshStoredPolygonGeometry(polygon) {
+      polygon.areaSqM = calculateSphericalArea(polygon.points);
+      if (polygon.layer && polygon.layer.setLatLngs) polygon.layer.setLatLngs(polygon.points.map(point => [point.lat, point.lon]));
+      if (polygon.areaLabel) {
+        polygon.areaLabel
+          .setLatLng(getPolygonCenter(polygon.points))
+          .setContent(formatArea(polygon.areaSqM));
+      }
+      renderPolygonDistanceLabels(polygon);
+      refreshPolygonDetailsLabel(polygon, polygon.points);
+    }
+
+    function refreshSplitPartGeometry(part, parentPolygon) {
+      part.areaSqM = calculateSphericalArea(part.points);
+      if (part.layer && part.layer.setLatLngs) part.layer.setLatLngs(part.points.map(point => [point.lat, point.lon]));
+      if (part.areaLabel) {
+        part.areaLabel
+          .setLatLng(getPolygonCenter(part.points))
+          .setContent(formatArea(part.areaSqM));
+      }
+      renderPolygonDistanceLabels(part);
+      refreshPolygonDetailsLabel(part, part.points);
+      if (parentPolygon && parentPolygon.id === state.activePolygonId) state.splitParts = parentPolygon.splitParts || [];
+    }
+
+    function refreshPolygonDetailsLabel(item, points) {
+      const details = getPolygonDetails(item);
+      const hasAttributes = details.name || details.kathaNo || details.surveyNo || details.remarks;
+      if (item.detailsLabel) map.removeLayer(item.detailsLabel);
+      item.detailsLabel = null;
+      if (!hasAttributes || !points.length) return;
+      item.detailsLabel = L.tooltip({
+        permanent: true,
+        direction: 'top',
+        offset: [0, -12],
+        className: 'area-label polygon-name-label',
+        opacity: 1,
+        interactive: false
+      })
+        .setLatLng(getPolygonCenter(points))
+        .setContent(buildPolygonDetailsHtml(details))
+        .addTo(map);
     }
 
     function toggleMergeMode() {
@@ -1763,14 +2463,17 @@
       }
 
       resetSplitMode();
+      resetTriangulationMode();
+      resetOffsetMode();
+      resetDeleteModes();
       joinMode = false;
-      elements.startJoinBtn.textContent = 'Start Join Mode';
+      updateModeButtons();
       elements.startJoinBtn.classList.remove('red');
       elements.startJoinBtn.classList.add('amber');
       elements.joinBanner.classList.remove('active');
       mergeMode = true;
       mergeSelection = [];
-      elements.mergePolygonBtn.textContent = 'Merge Selected';
+      updateModeButtons();
       elements.mergePolygonBtn.classList.add('amber');
       elements.mergePolygonBtn.classList.remove('secondary');
       setNotice(elements.polygonNotice, 'Click two or more polygons to merge as one polygon, then press Merge Selected.', 'good');
@@ -1781,14 +2484,763 @@
       mergeMode = false;
       mergeSelection = [];
       updateMergeSelectionStyles();
-      elements.mergePolygonBtn.textContent = 'Merge Polygon';
+      updateModeButtons();
       elements.mergePolygonBtn.classList.remove('amber');
       elements.mergePolygonBtn.classList.add('secondary');
       renderPolygonList();
     }
 
+    function toggleTriangulationMode() {
+      if (triangulationMode) {
+        resetTriangulationMode();
+        renderAll();
+        setNotice(elements.polygonNotice, 'Triangulation mode stopped.', '');
+        return;
+      }
+
+      if (state.points.length < 2) {
+        setNotice(elements.polygonNotice, 'Add at least two points before triangulation.', 'error');
+        return;
+      }
+
+      resetSplitMode();
+      resetMergeMode();
+      resetOffsetMode();
+      resetDeleteModes();
+      joinMode = false;
+      updateModeButtons();
+      elements.startJoinBtn.classList.remove('red');
+      elements.startJoinBtn.classList.add('amber');
+      elements.joinBanner.classList.remove('active');
+      triangulationMode = true;
+      triangulationSelection = [];
+      updateModeButtons();
+      elements.triangulationBtn.classList.add('amber');
+      elements.triangulationBtn.classList.remove('secondary');
+      setNotice(elements.polygonNotice, 'Triangulation mode: click two existing points.', 'good');
+      renderAll();
+    }
+
+    function resetTriangulationMode() {
+      triangulationMode = false;
+      triangulationSelection = [];
+      updateModeButtons();
+      elements.triangulationBtn.classList.remove('amber');
+      elements.triangulationBtn.classList.add('secondary');
+    }
+
+    async function requestTriangulationDistances() {
+      const first = state.points.find(point => point.id === triangulationSelection[0]);
+      const second = state.points.find(point => point.id === triangulationSelection[1]);
+      if (!first || !second) {
+        resetTriangulationMode();
+        renderAll();
+        return;
+      }
+
+      const triangulationInput = await showTriangulationDialog(first, second);
+      if (!triangulationInput) {
+        setNotice(elements.polygonNotice, 'Triangulation cancelled. Click two points to start again.', '');
+        resetTriangulationMode();
+        renderAll();
+        return;
+      }
+
+      const fromPoint = triangulationInput.fromChoice === '1' ? first : second;
+      const toPoint = triangulationInput.fromChoice === '1' ? second : first;
+      const sideMultiplier = triangulationInput.side === 'left' ? 1 : -1;
+      const calculated = calculateTriangulationPoint(
+        fromPoint,
+        toPoint,
+        triangulationInput.fromDistance,
+        triangulationInput.toDistance,
+        sideMultiplier
+      );
+      if (!calculated) {
+        alert('The two distances cannot form a triangle from the selected points.');
+        resetTriangulationMode();
+        renderAll();
+        return;
+      }
+
+      recordHistory();
+      const pointName = getNextTriangulationPointName();
+      addPoint({ name: pointName, lat: calculated.lat, lon: calculated.lon, source: 'Triangulation' });
+      const createdPoint = state.points[state.points.length - 1];
+      createFmbLine(fromPoint, createdPoint, { type: 'Triangulation', name: `${fromPoint.name}-${createdPoint.name}`, lengthMeters: triangulationInput.fromDistance });
+      createFmbLine(toPoint, createdPoint, { type: 'Triangulation', name: `${toPoint.name}-${createdPoint.name}`, lengthMeters: triangulationInput.toDistance });
+      resetTriangulationMode();
+      renderAll();
+      map.fitBounds(L.latLngBounds([[fromPoint.lat, fromPoint.lon], [toPoint.lat, toPoint.lon], [createdPoint.lat, createdPoint.lon]]), { padding: [40, 40], maxZoom: 19 });
+      setNotice(elements.polygonNotice, `Triangulation point ${pointName} created.`, 'good');
+    }
+
+    function calculateTriangulationPoint(first, second, distanceOne, distanceTwo, sideMultiplier = 1) {
+      const projection = createLocalProjection([first, second]);
+      const a = projection.project(first);
+      const b = projection.project(second);
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const base = Math.hypot(dx, dy);
+      if (base <= 0.001) return null;
+      if (distanceOne + distanceTwo < base - 0.001) return null;
+      if (Math.abs(distanceOne - distanceTwo) > base + 0.001) return null;
+
+      const along = (distanceOne * distanceOne - distanceTwo * distanceTwo + base * base) / (2 * base);
+      const heightSquared = distanceOne * distanceOne - along * along;
+      if (heightSquared < -0.001) return null;
+
+      const height = Math.sqrt(Math.max(0, heightSquared));
+      const ux = dx / base;
+      const uy = dy / base;
+      return projection.unproject({
+        x: a.x + ux * along - uy * height * sideMultiplier,
+        y: a.y + uy * along + ux * height * sideMultiplier
+      });
+    }
+
+    function showTriangulationDialog(first, second) {
+      return new Promise(resolve => {
+        const firstName = first.name || 'Point 1';
+        const secondName = second.name || 'Point 2';
+        const unitLabel = getLengthUnitInputLabel();
+        const baseLength = map.distance([first.lat, first.lon], [second.lat, second.lon]);
+
+        elements.fmbDialogTitle.textContent = 'Triangulation';
+        elements.fmbDialogSummary.textContent = `Point A: ${firstName}. Point B: ${secondName}. Base length: ${formatJoinDistance(baseLength)}. Left/Right is decided from Point A to Point B.`;
+        elements.fmbFromPointLabel.style.display = 'none';
+        elements.fmbFromPointSelect.style.display = 'none';
+        elements.fmbCutDistanceLabel.innerHTML = `Distance from Point A - ${escapeHtml(firstName)} (<span id="fmbLengthUnitLabel">${escapeHtml(unitLabel)}</span>)`;
+        elements.fmbPerpendicularDistanceLabel.innerHTML = `Distance from Point B - ${escapeHtml(secondName)} (${escapeHtml(unitLabel)})`;
+        elements.fmbSideLabel.textContent = 'Side from Point A to Point B';
+        elements.fmbDialogSubmit.textContent = 'Create Point';
+        elements.fmbFromPointSelect.innerHTML = '<option value="1">Point A to Point B</option>';
+        elements.fmbLengthUnitLabel = document.getElementById('fmbLengthUnitLabel');
+        elements.fmbCutDistance.value = '';
+        elements.fmbPerpendicularDistance.value = '';
+        elements.fmbCutDistance.min = '0';
+        elements.fmbPerpendicularDistance.min = '0';
+        const leftOption = elements.fmbDialog.querySelector('input[name="fmbOffsetSide"][value="left"]');
+        if (leftOption) leftOption.checked = true;
+        elements.fmbDialog.hidden = false;
+
+        const close = value => {
+          elements.fmbDialog.hidden = true;
+          elements.fmbDialogForm.onsubmit = null;
+          elements.fmbDialogCancel.onclick = null;
+          elements.fmbDialogBackdrop.onclick = null;
+          resolve(value);
+        };
+
+        elements.fmbDialogCancel.onclick = () => close(null);
+        elements.fmbDialogBackdrop.onclick = () => close(null);
+        elements.fmbDialogForm.onsubmit = event => {
+          event.preventDefault();
+          const fromChoice = '1';
+          const fromDistance = parseLengthInput(elements.fmbCutDistance.value);
+          const toDistance = parseLengthInput(elements.fmbPerpendicularDistance.value);
+          const sideInput = elements.fmbDialog.querySelector('input[name="fmbOffsetSide"]:checked');
+
+          if (fromDistance === null) {
+            alert(`Enter a valid distance from Point A - ${firstName}.`);
+            return;
+          }
+          if (toDistance === null) {
+            alert(`Enter a valid distance from Point B - ${secondName}.`);
+            return;
+          }
+
+          close({
+            fromChoice,
+            fromDistance,
+            toDistance,
+            side: sideInput ? sideInput.value : 'left'
+          });
+        };
+
+        setTimeout(() => elements.fmbCutDistance.focus(), 0);
+      });
+    }
+
+    function toggleOffsetMode() {
+      if (offsetMode) {
+        resetOffsetMode();
+        renderAll();
+        setNotice(elements.polygonNotice, 'Offset mode stopped.', '');
+        return;
+      }
+
+      if (!getOffsetSelectableLines().length) {
+        setNotice(elements.polygonNotice, 'Draw a polygon or construction line before using offset.', 'error');
+        return;
+      }
+
+      resetSplitMode();
+      resetMergeMode();
+      resetTriangulationMode();
+      resetDeleteModes();
+      joinMode = false;
+      updateModeButtons();
+      elements.startJoinBtn.classList.remove('red');
+      elements.startJoinBtn.classList.add('amber');
+      elements.joinBanner.classList.remove('active');
+      offsetMode = true;
+      updateModeButtons();
+      elements.offsetBtn.classList.add('amber');
+      elements.offsetBtn.classList.remove('secondary');
+      showOffsetSelectableLines();
+      setNotice(elements.polygonNotice, 'Offset mode: click a highlighted line.', 'good');
+      renderAll();
+    }
+
+    function resetOffsetMode() {
+      offsetMode = false;
+      clearOffsetSelectableLines();
+      updateModeButtons();
+      elements.offsetBtn.classList.remove('amber');
+      elements.offsetBtn.classList.add('secondary');
+    }
+
+    function showOffsetSelectableLines() {
+      clearOffsetSelectableLines();
+      getOffsetSelectableLines().forEach(item => {
+        const layer = L.polyline([[item.start.lat, item.start.lon], [item.end.lat, item.end.lon]], {
+          color: '#0ea5e9',
+          weight: 10,
+          opacity: 0.45,
+          lineCap: 'round',
+          bubblingMouseEvents: false,
+          interactive: true
+        }).addTo(map);
+        layer.bringToFront();
+        layer.on('click', event => {
+          L.DomEvent.stop(event);
+          requestOffsetFromLine(item);
+        });
+        offsetSelectableLayers.push(layer);
+      });
+    }
+
+    function clearOffsetSelectableLines() {
+      offsetSelectableLayers.forEach(layer => map.removeLayer(layer));
+      offsetSelectableLayers = [];
+    }
+
+    function prepareMapDeleteMode() {
+      resetSplitMode();
+      resetMergeMode();
+      resetTriangulationMode();
+      resetOffsetMode();
+      joinMode = false;
+      elements.startJoinBtn.classList.remove('red');
+      elements.startJoinBtn.classList.add('amber');
+      elements.joinBanner.classList.remove('active');
+    }
+
+    function resetDeleteModes() {
+      deletePolygonMode = false;
+      deleteLineMode = false;
+      deletePointMode = false;
+      clearDeleteLineTargets();
+      updateDeletePolygonStyles();
+      updateDeletePointStyles();
+      updateModeButtons();
+      renderPolygonList();
+    }
+
+    function toggleDeletePolygonMode() {
+      if (deletePolygonMode) {
+        resetDeleteModes();
+        setNotice(elements.polygonNotice, 'Delete polygon mode stopped.', '');
+        return;
+      }
+
+      if (!getPolygonListItems().length) {
+        setNotice(elements.polygonNotice, 'There is no polygon drawn on the map.', 'error');
+        return;
+      }
+
+      prepareMapDeleteMode();
+      deletePolygonMode = true;
+      deleteLineMode = false;
+      deletePointMode = false;
+      clearDeleteLineTargets();
+      updateDeletePolygonStyles();
+      updateDeletePointStyles();
+      updateModeButtons();
+      renderAll();
+      setNotice(elements.polygonNotice, 'Delete polygon mode: highlighted polygons can be clicked to remove.', 'good');
+    }
+
+    function toggleDeleteLineMode() {
+      if (deleteLineMode) {
+        resetDeleteModes();
+        setNotice(elements.polygonNotice, 'Delete line mode stopped.', '');
+        return;
+      }
+
+      if (!fmbLines.length) {
+        setNotice(elements.polygonNotice, 'There is no project line drawn on the map.', 'error');
+        return;
+      }
+
+      prepareMapDeleteMode();
+      deletePolygonMode = false;
+      deleteLineMode = true;
+      deletePointMode = false;
+      updateDeletePolygonStyles();
+      updateDeletePointStyles();
+      showDeleteLineTargets();
+      updateModeButtons();
+      renderAll();
+      setNotice(elements.polygonNotice, 'Delete line mode: highlighted project lines can be clicked to remove.', 'good');
+    }
+
+    function toggleDeletePointMode() {
+      if (deletePointMode) {
+        resetDeleteModes();
+        renderAll();
+        setNotice(elements.polygonNotice, 'Delete point mode stopped.', '');
+        return;
+      }
+
+      if (!state.points.length) {
+        setNotice(elements.polygonNotice, 'There is no point drawn on the map.', 'error');
+        return;
+      }
+
+      prepareMapDeleteMode();
+      deletePolygonMode = false;
+      deleteLineMode = false;
+      deletePointMode = true;
+      clearDeleteLineTargets();
+      updateDeletePolygonStyles();
+      updateModeButtons();
+      renderAll();
+      setNotice(elements.polygonNotice, 'Delete point mode: highlighted points can be clicked to remove.', 'good');
+    }
+
+    function showDeleteLineTargets() {
+      clearDeleteLineTargets();
+      fmbLines.forEach(line => {
+        const layer = L.polyline([[line.start.lat, line.start.lon], [line.end.lat, line.end.lon]], {
+          color: '#dc2626',
+          weight: 12,
+          opacity: 0.5,
+          dashArray: '3,6',
+          lineCap: 'round',
+          bubblingMouseEvents: false,
+          interactive: true
+        }).addTo(map);
+        layer.bringToFront();
+        layer.on('click', event => {
+          L.DomEvent.stop(event);
+          removeFmbLine(line.id);
+        });
+        deleteLineTargetLayers.push(layer);
+      });
+    }
+
+    function clearDeleteLineTargets() {
+      deleteLineTargetLayers.forEach(layer => map.removeLayer(layer));
+      deleteLineTargetLayers = [];
+    }
+
+    function updateDeletePolygonStyles() {
+      getPolygonListItems().forEach(item => {
+        const layer = getPolygonItemLayer(item);
+        if (!layer || !layer.setStyle) return;
+        if (deletePolygonMode) {
+          if (!layer._deleteOriginalStyle) {
+            layer._deleteOriginalStyle = {
+              color: layer.options.color,
+              fillColor: layer.options.fillColor,
+              fillOpacity: layer.options.fillOpacity,
+              weight: layer.options.weight
+            };
+          }
+          layer.setStyle({ color: '#dc2626', fillColor: '#fca5a5', fillOpacity: 0.35, weight: 6 });
+        } else if (layer._deleteOriginalStyle) {
+          layer.setStyle(layer._deleteOriginalStyle);
+          delete layer._deleteOriginalStyle;
+        }
+      });
+    }
+
+    function updateDeletePointStyles() {
+      state.points.forEach(point => {
+        const markerElement = point.marker && point.marker.getElement ? point.marker.getElement() : null;
+        if (markerElement) markerElement.classList.toggle('delete-target-marker', deletePointMode);
+      });
+    }
+
+    function refreshDeletePolygonTargets() {
+      if (!deletePolygonMode) return;
+      if (!getPolygonListItems().length) {
+        resetDeleteModes();
+        setNotice(elements.polygonNotice, 'All polygons removed. Delete polygon mode stopped.', '');
+        return;
+      }
+      updateDeletePolygonStyles();
+      renderPolygonList();
+    }
+
+    function refreshDeleteLineTargets() {
+      if (!deleteLineMode) return;
+      if (!fmbLines.length) {
+        resetDeleteModes();
+        setNotice(elements.polygonNotice, 'All project lines removed. Delete line mode stopped.', '');
+        return;
+      }
+      showDeleteLineTargets();
+    }
+
+    function refreshDeletePointTargets() {
+      if (!deletePointMode) return;
+      if (!state.points.length) {
+        resetDeleteModes();
+        setNotice(elements.polygonNotice, 'All points removed. Delete point mode stopped.', '');
+        return;
+      }
+      updateDeletePointStyles();
+    }
+
+    function getOffsetSelectableLines() {
+      const lines = [];
+      getPolygonListItems().forEach(item => {
+        const points = getPolygonItemPoints(item);
+        if (!points || points.length < 2) return;
+        points.forEach((point, index) => {
+          const next = points[(index + 1) % points.length];
+          lines.push({
+            type: 'Polygon boundary',
+            name: `${getPolygonItemTitle(item)} ${getSplitPointName(point, index)}-${getSplitPointName(next, (index + 1) % points.length)}`,
+            start: point,
+            end: next
+          });
+        });
+      });
+
+      fmbLines.forEach(line => {
+        lines.push({
+          type: line.type,
+          name: line.name,
+          start: line.start,
+          end: line.end,
+          fmbLineId: line.id
+        });
+      });
+
+      return lines.filter(line => map.distance([line.start.lat, line.start.lon], [line.end.lat, line.end.lon]) > 0.001);
+    }
+
+    async function requestOffsetFromLine(lineItem) {
+      const offsetInput = await showOffsetDialog(lineItem);
+      if (!offsetInput) {
+        setNotice(elements.polygonNotice, 'Offset cancelled. Click a highlighted line.', '');
+        return;
+      }
+
+      const fromPoint = offsetInput.fromChoice === '1' ? lineItem.start : lineItem.end;
+      const toPoint = offsetInput.fromChoice === '1' ? lineItem.end : lineItem.start;
+      const lineLength = map.distance([fromPoint.lat, fromPoint.lon], [toPoint.lat, toPoint.lon]);
+      const cutDistance = offsetInput.cutDistance;
+
+      if (cutDistance < -0.001 || cutDistance > lineLength + 0.001) {
+        alert(`Cut distance must be between 0 and ${formatJoinDistance(lineLength)}.`);
+        return;
+      }
+
+      const signedPerpendicularDistance = offsetInput.perpendicularDistance * (offsetInput.side === 'left' ? 1 : -1);
+      const offsetResult = calculateOffsetPoint(fromPoint, toPoint, cutDistance, signedPerpendicularDistance);
+      if (!offsetResult) {
+        alert('Offset point could not be calculated from the selected line.');
+        return;
+      }
+
+      recordHistory();
+      const pointName = getNextOffsetPointName();
+      addPoint({ name: pointName, lat: offsetResult.point.lat, lon: offsetResult.point.lon, source: 'Offset' });
+      const createdPoint = state.points[state.points.length - 1];
+      if (cutDistance > 0.001) {
+        createFmbLine(fromPoint, { ...offsetResult.cut, name: 'Cut point' }, {
+          type: 'Offset Cut',
+          name: `${fromPoint.name || 'From'}-Cut ${createdPoint.name}`,
+          lengthMeters: cutDistance,
+          color: '#0ea5e9'
+        });
+      }
+      if (Math.abs(signedPerpendicularDistance) > 0.001) {
+        createFmbLine({ ...offsetResult.cut, name: 'Cut point' }, createdPoint, {
+          type: 'Offset',
+          name: `Cut-${createdPoint.name}`,
+          lengthMeters: Math.abs(signedPerpendicularDistance)
+        });
+      }
+      resetOffsetMode();
+      renderAll();
+      map.fitBounds(L.latLngBounds([[fromPoint.lat, fromPoint.lon], [toPoint.lat, toPoint.lon], [createdPoint.lat, createdPoint.lon]]), { padding: [40, 40], maxZoom: 19 });
+      setNotice(elements.polygonNotice, Math.abs(signedPerpendicularDistance) <= 0.001 ? `Offset point ${pointName} created on the selected line.` : `Offset point ${pointName} created.`, 'good');
+    }
+
+    function showOffsetDialog(lineItem) {
+      return new Promise(resolve => {
+        const startName = lineItem.start.name || 'Start';
+        const endName = lineItem.end.name || 'End';
+        const unitLabel = getLengthUnitInputLabel();
+        const lineLength = map.distance([lineItem.start.lat, lineItem.start.lon], [lineItem.end.lat, lineItem.end.lon]);
+
+        elements.fmbDialogTitle.textContent = 'Offset';
+        elements.fmbDialogSummary.textContent = `${lineItem.name}. Line length: ${formatJoinDistance(lineLength)}. Left/Right is decided from the selected from point to the other point.`;
+        elements.fmbFromPointLabel.textContent = 'From point';
+        elements.fmbFromPointLabel.style.display = '';
+        elements.fmbFromPointSelect.style.display = '';
+        elements.fmbCutDistanceLabel.innerHTML = `Cut point distance (<span id="fmbLengthUnitLabel">${escapeHtml(unitLabel)}</span>)`;
+        elements.fmbPerpendicularDistanceLabel.textContent = 'Perpendicular distance';
+        elements.fmbSideLabel.textContent = 'Side from selected direction';
+        elements.fmbDialogSubmit.textContent = 'Create Point';
+        elements.fmbLengthUnitLabel = document.getElementById('fmbLengthUnitLabel');
+        elements.fmbFromPointSelect.innerHTML = `
+          <option value="1">${escapeHtml(startName)} to ${escapeHtml(endName)}</option>
+          <option value="2">${escapeHtml(endName)} to ${escapeHtml(startName)}</option>
+        `;
+        elements.fmbLengthUnitLabel.textContent = unitLabel;
+        elements.fmbCutDistance.value = '';
+        elements.fmbPerpendicularDistance.value = '';
+        elements.fmbCutDistance.min = '0';
+        elements.fmbPerpendicularDistance.min = '0';
+        const leftOption = elements.fmbDialog.querySelector('input[name="fmbOffsetSide"][value="left"]');
+        if (leftOption) leftOption.checked = true;
+        elements.fmbDialog.hidden = false;
+
+        const close = value => {
+          elements.fmbDialog.hidden = true;
+          elements.fmbDialogForm.onsubmit = null;
+          elements.fmbDialogCancel.onclick = null;
+          elements.fmbDialogBackdrop.onclick = null;
+          resolve(value);
+        };
+
+        elements.fmbDialogCancel.onclick = () => close(null);
+        elements.fmbDialogBackdrop.onclick = () => close(null);
+        elements.fmbDialogForm.onsubmit = event => {
+          event.preventDefault();
+          const fromChoice = elements.fmbFromPointSelect.value;
+          const fromPoint = fromChoice === '1' ? lineItem.start : lineItem.end;
+          const toPoint = fromChoice === '1' ? lineItem.end : lineItem.start;
+          const selectedLineLength = map.distance([fromPoint.lat, fromPoint.lon], [toPoint.lat, toPoint.lon]);
+          const cutDistance = parseLengthInput(elements.fmbCutDistance.value, false, true);
+          const perpendicularDistance = parseLengthInput(elements.fmbPerpendicularDistance.value, false, true);
+          const sideInput = elements.fmbDialog.querySelector('input[name="fmbOffsetSide"]:checked');
+
+          if (cutDistance === null) {
+            alert('Enter a valid cut point distance.');
+            return;
+          }
+          if (cutDistance < -0.001 || cutDistance > selectedLineLength + 0.001) {
+            alert(`Cut distance must be between 0 and ${formatJoinDistance(selectedLineLength)}.`);
+            return;
+          }
+          if (perpendicularDistance === null) {
+            alert('Enter a valid perpendicular distance.');
+            return;
+          }
+
+          close({
+            fromChoice,
+            cutDistance,
+            perpendicularDistance,
+            side: sideInput ? sideInput.value : 'left'
+          });
+        };
+
+        setTimeout(() => elements.fmbCutDistance.focus(), 0);
+      });
+    }
+
+    function calculateOffsetPoint(fromPoint, toPoint, cutDistance, perpendicularDistance) {
+      const projection = createLocalProjection([fromPoint, toPoint]);
+      const start = projection.project(fromPoint);
+      const end = projection.project(toPoint);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const length = Math.hypot(dx, dy);
+      if (length <= 0.001) return null;
+      const ux = dx / length;
+      const uy = dy / length;
+      const cut = {
+        x: start.x + ux * cutDistance,
+        y: start.y + uy * cutDistance
+      };
+      const point = {
+        x: cut.x - uy * perpendicularDistance,
+        y: cut.y + ux * perpendicularDistance
+      };
+      return {
+        cut: projection.unproject(cut),
+        point: projection.unproject(point)
+      };
+    }
+
+    function createFmbLine(start, end, options = {}) {
+      const line = {
+        id: options.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())),
+        type: options.type || 'Line',
+        name: options.name || `Line ${fmbLineCounter}`,
+        start: {
+          lat: Number(start.lat),
+          lon: Number(start.lon),
+          name: start.name || 'Start',
+          sourceId: start.sourceId || start.id
+        },
+        end: {
+          lat: Number(end.lat),
+          lon: Number(end.lon),
+          name: end.name || 'End',
+          sourceId: end.sourceId || end.id
+        },
+        lengthMeters: Number.isFinite(options.lengthMeters) ? options.lengthMeters : null,
+        color: options.color || '#7c3aed',
+        layer: null,
+        label: null
+      };
+      fmbLineCounter += 1;
+      line.layer = L.polyline([[line.start.lat, line.start.lon], [line.end.lat, line.end.lon]], {
+        color: line.color,
+        weight: 2,
+        opacity: 0.9,
+        dashArray: '5,7',
+        interactive: true
+      }).addTo(map);
+      line.layer.bringToFront();
+      line.label = createDistanceLabel(line.start, line.end, line.lengthMeters);
+      fmbLines.push(line);
+      renderFmbLineList();
+      return line;
+    }
+
+    function removeFmbLine(lineId) {
+      const line = fmbLines.find(item => item.id === lineId);
+      if (!line) return;
+      recordHistory();
+      if (line.layer) map.removeLayer(line.layer);
+      if (line.label) map.removeLayer(line.label);
+      fmbLines = fmbLines.filter(item => item.id !== lineId);
+      if (offsetMode) showOffsetSelectableLines();
+      renderFmbLineList();
+      setNotice(elements.polygonNotice, 'Selected project line removed.', '');
+      if (deleteLineMode) refreshDeleteLineTargets();
+    }
+
+    function clearFmbLines() {
+      fmbLines.forEach(line => {
+        if (line.layer) map.removeLayer(line.layer);
+        if (line.label) map.removeLayer(line.label);
+      });
+      fmbLines = [];
+      renderFmbLineList();
+    }
+
+    function refreshFmbLineLabels() {
+      fmbLines.forEach(line => {
+        if (line.label) map.removeLayer(line.label);
+        line.label = createDistanceLabel(line.start, line.end, line.lengthMeters);
+      });
+    }
+
+    function renderFmbLineList() {
+      if (!elements.fmbLineList) return;
+      elements.fmbLineList.innerHTML = '';
+      if (!fmbLines.length) {
+        elements.fmbLineList.innerHTML = '<div class="empty-note">No extra line drawn.</div>';
+        return;
+      }
+
+      fmbLines.forEach(line => {
+        const card = document.createElement('div');
+        card.className = 'polygon-card';
+        const length = Number.isFinite(line.lengthMeters) ? line.lengthMeters : map.distance([line.start.lat, line.start.lon], [line.end.lat, line.end.lon]);
+        card.innerHTML = `
+          <div>
+            <div class="polygon-title">${escapeHtml(line.name)}</div>
+            <div class="polygon-meta">${escapeHtml(line.type)}<br>${escapeHtml(formatJoinDistance(length))}</div>
+          </div>
+          <button class="tiny red" type="button" title="Delete line">Delete</button>
+        `;
+        card.addEventListener('click', event => {
+          if (event.target.tagName.toLowerCase() === 'button') return;
+          map.fitBounds(L.latLngBounds([[line.start.lat, line.start.lon], [line.end.lat, line.end.lon]]), { padding: [40, 40], maxZoom: 20 });
+        });
+        card.querySelector('button').addEventListener('click', event => {
+          event.stopPropagation();
+          removeFmbLine(line.id);
+        });
+        elements.fmbLineList.appendChild(card);
+      });
+    }
+
+    function readLengthPrompt(message, allowNegative = false, allowZero = false) {
+      const value = prompt(message);
+      if (value === null) return null;
+      const meters = parseLengthInput(value, allowNegative, allowZero);
+      if (meters === null) {
+        alert('Enter a valid distance.');
+        return null;
+      }
+      return meters;
+    }
+
+    function parseLengthInput(value, allowNegative = false, allowZero = false) {
+      const parsed = Number(String(value).replace(/,/g, '').trim());
+      if (!Number.isFinite(parsed)) return null;
+      if (!allowNegative && parsed < 0) return null;
+      if (!allowZero && Math.abs(parsed) < 1e-9) return null;
+      return convertLengthInputToMeters(parsed);
+    }
+
+    function convertLengthInputToMeters(value) {
+      const factors = {
+        gunterLinks: 0.201168,
+        metricLinks: 0.20,
+        meters: 1,
+        feet: 0.3048
+      };
+      return value * (factors[elements.lengthUnit.value] || 1);
+    }
+
+    function getLengthUnitInputLabel() {
+      const labels = {
+        gunterLinks: 'Gunter links',
+        metricLinks: 'Metric links',
+        meters: 'meters',
+        feet: 'feet'
+      };
+      return labels[elements.lengthUnit.value] || 'meters';
+    }
+
+    function getNextTriangulationPointName() {
+      let name = `T${triangulationPointCounter}`;
+      while (state.points.some(point => point.name === name)) {
+        triangulationPointCounter += 1;
+        name = `T${triangulationPointCounter}`;
+      }
+      triangulationPointCounter += 1;
+      return name;
+    }
+
+    function getNextOffsetPointName() {
+      let name = `O${offsetPointCounter}`;
+      while (state.points.some(point => point.name === name)) {
+        offsetPointCounter += 1;
+        name = `O${offsetPointCounter}`;
+      }
+      offsetPointCounter += 1;
+      return name;
+    }
+
     function toggleMergeSelection(itemKey) {
       if (!mergeMode) return;
+      recordHistory();
       if (mergeSelection.includes(itemKey)) {
         mergeSelection = mergeSelection.filter(key => key !== itemKey);
       } else {
@@ -1842,6 +3294,7 @@
       }
 
       const details = getPolygonItemDetails(selectedItems[0]);
+      recordHistory();
       resetMergeMode();
       removePolygonItemsByKeys(selectedKeys);
       const mergedPolygon = createStoredPolygonFromPoints(mergedPoints, {
@@ -1869,6 +3322,10 @@
     function mergePolygonItemsToPoints(items) {
       const allPoints = items.flatMap(item => getPolygonItemPoints(item));
       const projection = createLocalProjection(allPoints);
+      const sourceVertices = allPoints.map(point => ({
+        point,
+        projected: projection.project(point)
+      }));
       const geometries = items.map(item => {
         const ring = getPolygonItemPoints(item).map(point => {
           const projected = projection.project(point);
@@ -1883,10 +3340,44 @@
       if (!result || result.length !== 1 || !result[0] || !result[0][0] || result[0][0].length < 4) return null;
 
       const mergedRing = simplifyMergedRingCoordinates(result[0][0].slice(0, -1));
-      return mergedRing.map((coordinate, index) => ({
-        ...projection.unproject({ x: coordinate[0], y: coordinate[1] }),
-        name: `M${index + 1}`
-      }));
+      return mergedRing.map((coordinate, index) => {
+        const sourcePoint = findMergedSourcePoint(coordinate, sourceVertices);
+        if (sourcePoint) return copyPolygonPoint(sourcePoint, index);
+        const projectedPoint = { x: coordinate[0], y: coordinate[1] };
+        const unprojected = projection.unproject(projectedPoint);
+        const nearestMapPoint = findNearestMapPoint(unprojected, 0.75);
+        if (nearestMapPoint) return copyPolygonPoint(nearestMapPoint, index);
+        return {
+          ...unprojected,
+          name: `P${index + 1}`
+        };
+      });
+    }
+
+    function findMergedSourcePoint(coordinate, sourceVertices) {
+      let nearest = null;
+      let nearestDistance = Infinity;
+      sourceVertices.forEach(item => {
+        const distance = Math.hypot(item.projected.x - coordinate[0], item.projected.y - coordinate[1]);
+        if (distance < nearestDistance) {
+          nearest = item.point;
+          nearestDistance = distance;
+        }
+      });
+      return nearestDistance <= 0.75 ? nearest : null;
+    }
+
+    function findNearestMapPoint(point, maxDistanceMeters) {
+      let nearest = null;
+      let nearestDistance = Infinity;
+      state.points.forEach(item => {
+        const distance = map.distance([point.lat, point.lon], [item.lat, item.lon]);
+        if (distance < nearestDistance) {
+          nearest = item;
+          nearestDistance = distance;
+        }
+      });
+      return nearestDistance <= maxDistanceMeters ? nearest : null;
     }
 
     function simplifyMergedRingCoordinates(ring) {
@@ -1996,6 +3487,11 @@
       const polygon = state.polygons.find(item => item.id === polygonId);
       if (!polygon) return;
       setActivePolygon(polygon);
+      if (deletePolygonMode) {
+        removeStoredPolygon(polygon.id);
+        refreshDeletePolygonTargets();
+        return;
+      }
       if (mergeMode) {
         toggleMergeSelection(getPolygonItemKey({ type: 'polygon', polygon }));
         return;
@@ -2098,6 +3594,7 @@
         card.querySelector('button').addEventListener('click', event => {
           event.stopPropagation();
           removeStoredPolygonItem(item);
+          refreshDeletePolygonTargets();
         });
         elements.polygonList.appendChild(card);
       });
@@ -2194,6 +3691,7 @@
         distanceLabels: []
       }));
 
+      recordHistory();
       if (part) {
         removeSplitPartLayers(part);
         state.splitParts = state.splitParts.filter(item => item.id !== part.id);
@@ -2280,7 +3778,7 @@
       const projection = createLocalProjection(points);
       const projected = points.map((point, index) => {
         const value = projection.project(point);
-        return { ...value, name: getSplitPointName(point, index) };
+        return { ...value, name: getSplitPointName(point, index), sourceId: point.sourceId };
       });
       const start = projected[edgeIndex];
       const end = projected[(edgeIndex + 1) % projected.length];
@@ -2368,7 +3866,8 @@
         if (assignNames && !original && !generatedNames.has(key)) generatedNames.set(key, `S${splitPointCounter++}`);
         return {
           ...projection.unproject(projectedPoint),
-          name: original ? original.name : generatedNames.get(key)
+          name: original ? original.name : generatedNames.get(key),
+          sourceId: original ? original.sourceId : undefined
         };
       });
     }
@@ -2462,6 +3961,7 @@
         return;
       }
 
+      recordHistory();
       resetSplitMode();
       const selected = getJoinedPoints();
       const polygonPoints = selected.map((point, index) => copyPolygonPoint(point, index));
@@ -2506,7 +4006,7 @@
       setActivePolygon(polygon);
       map.fitBounds(polygon.layer.getBounds(), { padding: [40, 40] });
       joinMode = false;
-      elements.startJoinBtn.textContent = 'Start Join Mode';
+      updateModeButtons();
       elements.startJoinBtn.classList.remove('red');
       elements.startJoinBtn.classList.add('amber');
       elements.joinBanner.classList.remove('active');
@@ -2521,12 +4021,15 @@
     }
 
     function undoJoin() {
+      if (!state.joinOrder.length) return;
+      recordHistory();
       state.joinOrder.pop();
       updateJoinPreview();
       renderAll();
     }
 
     function clearJoin() {
+      if (state.joinOrder.length) recordHistory();
       state.joinOrder = [];
       resetSplitMode();
       if (previewLine) {
@@ -2539,14 +4042,19 @@
     }
 
     function clearAll() {
+      recordHistory();
       state.points = [];
       state.joinOrder = [];
       resetSplitMode();
+      resetTriangulationMode();
+      resetOffsetMode();
+      resetDeleteModes();
       markerLayer.clearLayers();
       if (previewLine) map.removeLayer(previewLine);
       previewLine = null;
       clearJoinDistanceLabels();
       clearStoredPolygons();
+      clearFmbLines();
       renderAll();
       setNotice(elements.polygonNotice, 'All points and polygon data cleared.', '');
     }
@@ -2563,7 +4071,7 @@
         }).addTo(map);
         selected.slice(0, -1).forEach((point, index) => {
           const next = selected[index + 1];
-          joinDistanceLabels.push(createDistanceLabel(point, next));
+          joinDistanceLabels.push(createDistanceLabel(point, next, getEnteredLineLengthForEdge(point, next)));
         });
       }
     }
@@ -2578,7 +4086,7 @@
       clearPolygonDistanceLabels(polygon);
       polygon.distanceLabels = polygon.points.map((point, index) => {
         const next = polygon.points[(index + 1) % polygon.points.length];
-        return createDistanceLabel(point, next);
+        return createDistanceLabel(point, next, getEnteredLineLengthForEdge(point, next));
       });
     }
 
@@ -2588,8 +4096,25 @@
       polygon.distanceLabels = [];
     }
 
-    function createDistanceLabel(point, next) {
-      const distanceMeters = map.distance([point.lat, point.lon], [next.lat, next.lon]);
+    function getEnteredLineLengthForEdge(point, next) {
+      const match = fmbLines.find(line => {
+        const forward = isSameLineEndpoint(line.start, point) && isSameLineEndpoint(line.end, next);
+        const backward = isSameLineEndpoint(line.start, next) && isSameLineEndpoint(line.end, point);
+        return (forward || backward) && Number.isFinite(line.lengthMeters);
+      });
+      return match ? match.lengthMeters : null;
+    }
+
+    function isSameLineEndpoint(a, b) {
+      if (!a || !b) return false;
+      if (a.sourceId && b.sourceId && a.sourceId === b.sourceId) return true;
+      if (a.sourceId && b.id && a.sourceId === b.id) return true;
+      if (a.id && b.sourceId && a.id === b.sourceId) return true;
+      return map.distance([a.lat, a.lon], [b.lat, b.lon]) <= 0.05;
+    }
+
+    function createDistanceLabel(point, next, labelMeters = null) {
+      const distanceMeters = Number.isFinite(labelMeters) ? labelMeters : map.distance([point.lat, point.lon], [next.lat, next.lon]);
       const midpoint = [(point.lat + next.lat) / 2, (point.lon + next.lon) / 2];
       const label = L.tooltip({
         permanent: true,
@@ -2599,7 +4124,7 @@
         interactive: false
       })
         .setLatLng(midpoint)
-        .setContent(formatJoinDistance(distanceMeters))
+        .setContent(`<span class="distance-label-text">${escapeHtml(formatJoinDistance(distanceMeters))}</span>`)
         .addTo(map);
       alignDistanceLabel(label, point, next);
       return label;
@@ -2613,8 +4138,8 @@
       if (angle < -90) angle += 180;
       const element = label.getElement();
       if (!element) return;
-      const baseTransform = (element.style.transform || '').replace(/\srotate\([^)]*\)/g, '');
-      element.style.transform = `${baseTransform} rotate(${angle.toFixed(1)}deg)`;
+      const textElement = element.querySelector('.distance-label-text');
+      if (textElement) textElement.style.transform = `rotate(${angle.toFixed(1)}deg)`;
     }
 
     function formatJoinDistance(meters) {
@@ -2639,16 +4164,19 @@
       elements.pointCount.textContent = String(state.points.length);
       elements.joinCount.textContent = String(state.joinOrder.length);
       elements.finishPolygonBtn.disabled = state.joinOrder.length < 3;
-      elements.undoJoinBtn.disabled = state.joinOrder.length === 0;
+      if (elements.undoJoinBtn) elements.undoJoinBtn.disabled = state.joinOrder.length === 0;
       elements.selectedOrder.value = getJoinedPoints().map((point, index) => `${index + 1}. ${point.name}`).join('\n');
 
       elements.pointList.innerHTML = '';
       state.points.forEach((point, index) => {
         const selectedIndex = state.joinOrder.indexOf(point.id);
+        const triangulationIndex = triangulationSelection.indexOf(point.id);
+        const isSelected = selectedIndex >= 0 || triangulationIndex >= 0;
+        const badgeText = selectedIndex >= 0 ? selectedIndex + 1 : triangulationIndex >= 0 ? triangulationIndex + 1 : index + 1;
         const card = document.createElement('div');
-        card.className = `point-card${selectedIndex >= 0 ? ' selected' : ''}`;
+        card.className = `point-card${isSelected ? ' selected' : ''}`;
         card.innerHTML = `
-          <div class="badge">${selectedIndex >= 0 ? selectedIndex + 1 : index + 1}</div>
+          <div class="badge">${badgeText}</div>
           <div>
             <div class="point-name">${escapeHtml(point.name)}</div>
             <div class="point-meta">${point.lat.toFixed(8)}, ${point.lon.toFixed(8)}<br>${escapeHtml(point.source || 'Point')}</div>
@@ -2657,23 +4185,34 @@
         `;
         card.addEventListener('click', event => {
           if (event.target.tagName.toLowerCase() === 'button') return;
-          if (joinMode) {
+          if (deletePointMode) {
+            removePoint(point.id);
+            refreshDeletePointTargets();
+          } else if (triangulationMode) {
+            selectForTriangulation(point.id);
+          } else if (joinMode) {
             selectForJoin(point.id);
           } else {
             map.setView([point.lat, point.lon], Math.max(map.getZoom(), 18));
             point.marker.openPopup();
           }
         });
-        card.querySelector('button').addEventListener('click', () => removePoint(point.id));
+        card.querySelector('button').addEventListener('click', () => {
+          removePoint(point.id);
+          refreshDeletePointTargets();
+        });
         elements.pointList.appendChild(card);
       });
 
       state.points.forEach(point => {
         const selectedIndex = state.joinOrder.indexOf(point.id);
+        const triangulationIndex = triangulationSelection.indexOf(point.id);
+        const isSelected = selectedIndex >= 0 || triangulationIndex >= 0;
         const markerElement = point.marker.getElement();
-        if (markerElement) markerElement.classList.toggle('join-selected-marker', selectedIndex >= 0);
-        point.marker.setZIndexOffset(selectedIndex >= 0 ? 1000 + selectedIndex : 0);
-        if (joinMode) {
+        if (markerElement) markerElement.classList.toggle('join-selected-marker', isSelected);
+        if (markerElement) markerElement.classList.toggle('delete-target-marker', deletePointMode);
+        point.marker.setZIndexOffset(isSelected || deletePointMode ? 1000 + Math.max(selectedIndex, triangulationIndex, 0) : 0);
+        if (joinMode || triangulationMode || deletePointMode) {
           point.marker.closePopup();
           point.marker.unbindPopup();
         } else if (point.marker.getPopup()) {
@@ -2683,16 +4222,28 @@
         }
       });
       renderPolygonList();
+      renderFmbLineList();
+      updateModeButtons();
+      updateHistoryButtons();
     }
 
     function removePoint(pointId) {
       const point = state.points.find(item => item.id === pointId);
       if (!point) return;
+      recordHistory();
       markerLayer.removeLayer(point.marker);
       state.points = state.points.filter(item => item.id !== pointId);
       state.joinOrder = state.joinOrder.filter(id => id !== pointId);
+      triangulationSelection = triangulationSelection.filter(id => id !== pointId);
+      const polygonUpdate = removePointFromStoredPolygons(point);
       updateJoinPreview();
       renderAll();
+      if (polygonUpdate.changed || polygonUpdate.removed) {
+        const message = polygonUpdate.removed
+          ? 'Point removed. Polygon shape updated, and polygon with less than 3 points was removed.'
+          : 'Point removed. Polygon shape, length labels, and area updated.';
+        setNotice(elements.polygonNotice, message, 'good');
+      }
     }
 
     function clearPolygonOnly() {
@@ -2701,13 +4252,17 @@
     }
 
     function getPopupHtml(point, selectedIndex = state.joinOrder.indexOf(point.id)) {
-      const selectedText = selectedIndex >= 0 ? `<br><strong>Join order:</strong> ${selectedIndex + 1}` : '';
+      const selectedText = selectedIndex >= 0
+        ? `<div class="point-popup-row"><span>Join</span><strong>${selectedIndex + 1}</strong></div>`
+        : '';
       return `
-        <div class="popup-title">${escapeHtml(point.name)}</div>
-        <div>Lat: ${point.lat.toFixed(8)}</div>
-        <div>Lon: ${point.lon.toFixed(8)}</div>
-        <div>Source: ${escapeHtml(point.source || 'Point')}</div>
-        ${selectedText}
+        <div class="point-popup">
+          <div class="popup-title">${escapeHtml(point.name)}</div>
+          <div class="point-popup-row"><span>Lat</span><strong>${point.lat.toFixed(8)}</strong></div>
+          <div class="point-popup-row"><span>Lon</span><strong>${point.lon.toFixed(8)}</strong></div>
+          <div class="point-popup-row"><span>Source</span><strong>${escapeHtml(point.source || 'Point')}</strong></div>
+          ${selectedText}
+        </div>
       `;
     }
 
@@ -3320,6 +4875,7 @@ EOF
     }
 
     function loadSampleRow() {
+      recordHistory();
       addPoint({
         name: 'pt0',
         lat: parseDmsOrDecimal('16:11:24.73575'),
@@ -3458,6 +5014,12 @@ EOF
         const parentPolygon = state.polygons.find(polygon => polygon.id === part.parentPolygonId);
         if (parentPolygon) setActivePolygon(parentPolygon);
       }
+      if (deletePolygonMode && part) {
+        const parentPolygon = state.polygons.find(polygon => polygon.id === part.parentPolygonId);
+        if (parentPolygon) removeStoredSplitPart(parentPolygon.id, part.id);
+        refreshDeletePolygonTargets();
+        return;
+      }
       if (mergeMode && part) {
         const parentPolygon = state.polygons.find(polygon => polygon.id === part.parentPolygonId);
         if (parentPolygon) toggleMergeSelection(getPolygonItemKey({ type: 'part', polygon: parentPolygon, part }));
@@ -3487,6 +5049,7 @@ EOF
       details.kathaNo = kathaNo.trim();
       details.surveyNo = surveyNo.trim();
       details.remarks = remarks.trim();
+      recordHistory();
       setPolygonDetails(part, details);
       updatePolygonNameLabel(part);
     }
@@ -3626,6 +5189,8 @@ EOF
           renderPolygonDistanceLabels(polygon);
         }
       });
+      refreshFmbLineLabels();
+      renderFmbLineList();
     }
 
     function formatArea(areaSqM) {
