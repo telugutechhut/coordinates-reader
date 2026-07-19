@@ -472,13 +472,71 @@
       line-height: 1;
     }
 
+    .map-tool-controls button.tool-active {
+      opacity: 1;
+      border-color: rgba(15, 23, 42, 0.75);
+      box-shadow:
+        0 0 0 3px rgba(250, 204, 21, 0.82),
+        0 10px 26px rgba(15, 23, 42, 0.24);
+    }
+
+    .map-tool-controls button.tool-clicked {
+      animation: floating-tool-click 0.42s ease;
+    }
+
+    @keyframes floating-tool-click {
+      0% {
+        transform: scale(1);
+      }
+      45% {
+        transform: scale(1.12);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
     .map-tool-controls button:disabled {
       opacity: 0.42;
     }
 
     body.sidebar-open .map-tool-controls,
-    body.sidebar-open .mobile-tools-toggle {
+    body.sidebar-open .mobile-tools-toggle,
+    body.sidebar-open .floating-unit-panel {
       display: none;
+    }
+
+    .floating-unit-panel {
+      position: absolute;
+      left: 50px;
+      top: 12px;
+      z-index: 1200;
+      display: grid;
+      grid-template-columns: 40px 76px;
+      gap: 5px;
+      align-items: center;
+      padding: 6px;
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+    }
+
+    .floating-unit-panel[hidden] {
+      display: none;
+    }
+
+    .floating-unit-panel label {
+      margin: 0;
+      font-size: 8px;
+      line-height: 1.1;
+    }
+
+    .floating-unit-panel select {
+      min-height: 26px;
+      padding: 3px 4px;
+      border-radius: 5px;
+      font-size: 10px;
     }
 
     .sidebar-backdrop {
@@ -549,12 +607,12 @@
 
     .point-label {
       border: 1px solid rgba(15, 23, 42, 0.24);
-      border-radius: 5px;
-      padding: 2px 5px;
+      border-radius: 4px;
+      padding: 1px 3px;
       color: #0f172a;
       background: rgba(255, 255, 255, 0.92);
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
-      font-size: 10px;
+      box-shadow: 0 3px 9px rgba(15, 23, 42, 0.2);
+      font-size: 8px;
       font-weight: 700;
       line-height: 1.1;
       white-space: nowrap;
@@ -751,6 +809,11 @@
       }
 
       .map-tool-controls {
+        top: 58px;
+      }
+
+      .floating-unit-panel {
+        left: 50px;
         top: 58px;
       }
 
@@ -1154,14 +1217,35 @@
       <div class="map-tool-controls">
         <button id="startJoinBtn" class="amber" type="button" title="Polygon join mode">&#9633;</button>
         <button id="splitPolygonBtn" class="secondary translucent" type="button" title="Split polygon">&#9986;</button>
+        <button id="splitByPointsBtn" class="secondary translucent" type="button" title="Split with points">&#8226;&#9473;&#8226;</button>
         <button id="mergePolygonBtn" class="secondary translucent" type="button" title="Merge polygons">&#8644;</button>
         <button id="triangulationBtn" class="secondary translucent" type="button" title="Triangulation">&#9651;</button>
         <button id="offsetBtn" class="secondary translucent" type="button" title="Offset">&#8869;</button>
         <button id="deletePolygonBtn" class="secondary translucent" type="button" title="Delete polygon">&#9633;&#215;</button>
         <button id="deleteLineBtn" class="secondary translucent" type="button" title="Delete line">&#9473;&#215;</button>
         <button id="deletePointBtn" class="secondary translucent" type="button" title="Delete point">&#8226;&#215;</button>
+        <button id="areaUnitFloatBtn" class="secondary translucent" type="button" title="Area unit">A</button>
+        <button id="lengthUnitFloatBtn" class="secondary translucent" type="button" title="Length unit">L</button>
         <button id="mapUndoBtn" type="button" title="Undo">↶</button>
         <button id="mapRedoBtn" type="button" title="Redo">↷</button>
+        <button id="resetMapBtn" class="red translucent" type="button" title="Reset map">&#8635;</button>
+      </div>
+      <div id="floatingUnitPanel" class="floating-unit-panel" hidden>
+        <label for="floatingAreaUnit">Area</label>
+        <select id="floatingAreaUnit">
+          <option value="acres">Acres</option>
+          <option value="sqm">Sq m</option>
+          <option value="sqft">Sq ft</option>
+          <option value="sqyd">Sq yd</option>
+          <option value="hectares">Ha</option>
+        </select>
+        <label for="floatingLengthUnit">Length</label>
+        <select id="floatingLengthUnit">
+          <option value="gunterLinks">Gunter</option>
+          <option value="metricLinks">Metric</option>
+          <option value="meters">Meters</option>
+          <option value="feet">Feet</option>
+        </select>
       </div>
       <div id="joinBanner" class="join-banner">Join mode is active. Click points in the exact polygon order.</div>
     </section>
@@ -1216,11 +1300,11 @@
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [18, 30],
-      iconAnchor: [9, 30],
-      popupAnchor: [1, -26],
-      shadowSize: [30, 30],
-      shadowAnchor: [9, 30]
+      iconSize: [14, 23],
+      iconAnchor: [7, 23],
+      popupAnchor: [1, -20],
+      shadowSize: [24, 24],
+      shadowAnchor: [7, 23]
     });
     let activeBase = 'hybrid';
     let previewLine = null;
@@ -1233,6 +1317,8 @@
     let mergeMode = false;
     let mergeSelection = [];
     let splitEdgeLayers = [];
+    let splitByPointsMode = false;
+    let splitByPointsSelection = [];
     let splitPointCounter = 1;
     let triangulationMode = false;
     let triangulationSelection = [];
@@ -1242,6 +1328,7 @@
     let offsetSelectableLayers = [];
     let fmbLines = [];
     let fmbLineCounter = 1;
+    let floatingUnitPanelMode = '';
     let deletePolygonMode = false;
     let deleteLineMode = false;
     let deletePointMode = false;
@@ -1288,8 +1375,15 @@
       joinBanner: document.getElementById('joinBanner'),
       mapUndoBtn: document.getElementById('mapUndoBtn'),
       mapRedoBtn: document.getElementById('mapRedoBtn'),
+      resetMapBtn: document.getElementById('resetMapBtn'),
+      areaUnitFloatBtn: document.getElementById('areaUnitFloatBtn'),
+      lengthUnitFloatBtn: document.getElementById('lengthUnitFloatBtn'),
+      floatingUnitPanel: document.getElementById('floatingUnitPanel'),
+      floatingAreaUnit: document.getElementById('floatingAreaUnit'),
+      floatingLengthUnit: document.getElementById('floatingLengthUnit'),
       startJoinBtn: document.getElementById('startJoinBtn'),
       splitPolygonBtn: document.getElementById('splitPolygonBtn'),
+      splitByPointsBtn: document.getElementById('splitByPointsBtn'),
       mergePolygonBtn: document.getElementById('mergePolygonBtn'),
       triangulationBtn: document.getElementById('triangulationBtn'),
       offsetBtn: document.getElementById('offsetBtn'),
@@ -1342,6 +1436,7 @@
     document.getElementById('exportPolygonBtn').addEventListener('click', exportPolygon);
     document.getElementById('startJoinBtn').addEventListener('click', toggleJoinMode);
     document.getElementById('splitPolygonBtn').addEventListener('click', toggleSplitMode);
+    document.getElementById('splitByPointsBtn').addEventListener('click', toggleSplitByPointsMode);
     document.getElementById('mergePolygonBtn').addEventListener('click', toggleMergeMode);
     document.getElementById('triangulationBtn').addEventListener('click', toggleTriangulationMode);
     document.getElementById('offsetBtn').addEventListener('click', toggleOffsetMode);
@@ -1354,14 +1449,33 @@
     document.getElementById('clearAllBtn').addEventListener('click', clearAll);
     document.getElementById('mapUndoBtn').addEventListener('click', performMapUndo);
     document.getElementById('mapRedoBtn').addEventListener('click', performMapRedo);
+    document.getElementById('resetMapBtn').addEventListener('click', confirmResetMap);
+    document.getElementById('areaUnitFloatBtn').addEventListener('click', () => toggleFloatingUnitPanel('area'));
+    document.getElementById('lengthUnitFloatBtn').addEventListener('click', () => toggleFloatingUnitPanel('length'));
+    document.querySelectorAll('.map-tool-controls button').forEach(button => {
+      button.addEventListener('click', () => flashFloatingToolButton(button));
+    });
     document.getElementById('mobileToolsToggle').addEventListener('click', () => document.body.classList.add('sidebar-open'));
     document.getElementById('sidebarBackdrop').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
     document.getElementById('closeSidebarBtn').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
     elements.areaUnit.addEventListener('change', updateAreaDisplay);
     elements.lengthUnit.addEventListener('change', updateLengthDisplay);
+    elements.areaUnit.addEventListener('change', syncFloatingUnitControls);
+    elements.lengthUnit.addEventListener('change', syncFloatingUnitControls);
+    elements.floatingAreaUnit.addEventListener('change', () => {
+      elements.areaUnit.value = elements.floatingAreaUnit.value;
+      updateAreaDisplay();
+      syncFloatingUnitControls();
+    });
+    elements.floatingLengthUnit.addEventListener('change', () => {
+      elements.lengthUnit.value = elements.floatingLengthUnit.value;
+      updateLengthDisplay();
+      syncFloatingUnitControls();
+    });
     elements.mapUndoBtn.innerHTML = '&#8630;';
     elements.mapRedoBtn.innerHTML = '&#8631;';
     updateModeButtons();
+    syncFloatingUnitControls();
     updateHistoryButtons();
 
     function recordHistory() {
@@ -1396,6 +1510,57 @@
       elements.mapRedoBtn.disabled = redoStack.length === 0;
     }
 
+    function flashFloatingToolButton(button) {
+      if (!button || button.disabled) return;
+      button.classList.remove('tool-clicked');
+      void button.offsetWidth;
+      button.classList.add('tool-clicked');
+      window.setTimeout(() => button.classList.remove('tool-clicked'), 450);
+    }
+
+    function toggleFloatingUnitPanel(mode) {
+      const shouldClose = !elements.floatingUnitPanel.hidden && floatingUnitPanelMode === mode;
+      floatingUnitPanelMode = shouldClose ? '' : mode;
+      elements.floatingUnitPanel.hidden = shouldClose;
+      syncFloatingUnitControls();
+      updateModeButtons();
+      if (!shouldClose) {
+        const target = mode === 'area' ? elements.floatingAreaUnit : elements.floatingLengthUnit;
+        window.setTimeout(() => target.focus(), 0);
+      }
+    }
+
+    function getFloatingAreaUnitShortLabel(value) {
+      const labels = {
+        acres: 'Ac',
+        sqm: 'm2',
+        sqft: 'ft2',
+        sqyd: 'yd2',
+        hectares: 'Ha',
+      };
+      return labels[value] || 'A';
+    }
+
+    function getFloatingLengthUnitShortLabel(value) {
+      const labels = {
+        gunterLinks: 'GL',
+        metricLinks: 'ML',
+        meters: 'm',
+        feet: 'ft',
+      };
+      return labels[value] || 'L';
+    }
+
+    function syncFloatingUnitControls() {
+      if (!elements.floatingAreaUnit || !elements.floatingLengthUnit) return;
+      elements.floatingAreaUnit.value = elements.areaUnit.value;
+      elements.floatingLengthUnit.value = elements.lengthUnit.value;
+      elements.areaUnitFloatBtn.textContent = getFloatingAreaUnitShortLabel(elements.areaUnit.value);
+      elements.lengthUnitFloatBtn.textContent = getFloatingLengthUnitShortLabel(elements.lengthUnit.value);
+      elements.areaUnitFloatBtn.title = `Area unit: ${elements.areaUnit.options[elements.areaUnit.selectedIndex].text}`;
+      elements.lengthUnitFloatBtn.title = `Length unit: ${elements.lengthUnit.options[elements.lengthUnit.selectedIndex].text}`;
+    }
+
     function captureHistoryState() {
       return {
         points: state.points.map(serializePoint),
@@ -1403,6 +1568,7 @@
         polygons: state.polygons.map(serializePolygon),
         activePolygonId: state.activePolygonId,
         triangulationSelection: [...triangulationSelection],
+        splitByPointsSelection: [...splitByPointsSelection],
         mergeSelection: [...mergeSelection],
         fmbLines: fmbLines.map(serializeFmbLine),
         counters: {
@@ -1414,6 +1580,7 @@
         modes: {
           joinMode,
           splitMode,
+          splitByPointsMode,
           mergeMode,
           triangulationMode,
           offsetMode,
@@ -1486,6 +1653,7 @@
       snapshot.points.forEach(point => addPoint({ ...point }));
       state.joinOrder = snapshot.joinOrder.filter(id => state.points.some(point => point.id === id));
       triangulationSelection = snapshot.triangulationSelection.filter(id => state.points.some(point => point.id === id));
+      splitByPointsSelection = (snapshot.splitByPointsSelection || []).filter(id => state.points.some(point => point.id === id));
       mergeSelection = [...snapshot.mergeSelection];
 
       snapshot.polygons.forEach(polygonData => {
@@ -1506,6 +1674,7 @@
 
       joinMode = snapshot.modes.joinMode;
       splitMode = snapshot.modes.splitMode;
+      splitByPointsMode = !!snapshot.modes.splitByPointsMode;
       mergeMode = snapshot.modes.mergeMode;
       triangulationMode = snapshot.modes.triangulationMode;
       offsetMode = snapshot.modes.offsetMode;
@@ -1615,42 +1784,59 @@
       elements.startJoinBtn.title = joinMode ? 'Stop polygon join mode' : 'Polygon join mode';
       elements.startJoinBtn.classList.toggle('red', joinMode);
       elements.startJoinBtn.classList.toggle('amber', !joinMode);
+      elements.startJoinBtn.classList.toggle('tool-active', joinMode);
       elements.joinBanner.classList.toggle('active', joinMode);
 
       elements.splitPolygonBtn.innerHTML = splitMode ? '&#10005;' : '&#9986;';
       elements.splitPolygonBtn.title = splitMode ? 'Stop split mode' : 'Split polygon';
       elements.splitPolygonBtn.classList.toggle('amber', splitMode);
       elements.splitPolygonBtn.classList.toggle('secondary', !splitMode);
+      elements.splitPolygonBtn.classList.toggle('tool-active', splitMode);
+
+      elements.splitByPointsBtn.innerHTML = splitByPointsMode ? '&#10005;' : '&#8226;&#9473;&#8226;';
+      elements.splitByPointsBtn.title = splitByPointsMode ? 'Stop split with points' : 'Split with points';
+      elements.splitByPointsBtn.classList.toggle('amber', splitByPointsMode);
+      elements.splitByPointsBtn.classList.toggle('secondary', !splitByPointsMode);
+      elements.splitByPointsBtn.classList.toggle('tool-active', splitByPointsMode);
 
       elements.mergePolygonBtn.innerHTML = '&#8644;';
       elements.mergePolygonBtn.title = mergeMode ? 'Merge selected polygons' : 'Merge polygons';
       elements.mergePolygonBtn.classList.toggle('amber', mergeMode);
       elements.mergePolygonBtn.classList.toggle('secondary', !mergeMode);
+      elements.mergePolygonBtn.classList.toggle('tool-active', mergeMode);
 
       elements.triangulationBtn.innerHTML = triangulationMode ? '&#10005;' : '&#9651;';
       elements.triangulationBtn.title = triangulationMode ? 'Stop triangulation' : 'Triangulation';
       elements.triangulationBtn.classList.toggle('amber', triangulationMode);
       elements.triangulationBtn.classList.toggle('secondary', !triangulationMode);
+      elements.triangulationBtn.classList.toggle('tool-active', triangulationMode);
 
       elements.offsetBtn.innerHTML = offsetMode ? '&#10005;' : '&#8869;';
       elements.offsetBtn.title = offsetMode ? 'Stop offset' : 'Offset';
       elements.offsetBtn.classList.toggle('amber', offsetMode);
       elements.offsetBtn.classList.toggle('secondary', !offsetMode);
+      elements.offsetBtn.classList.toggle('tool-active', offsetMode);
 
       elements.deletePolygonBtn.innerHTML = deletePolygonMode ? '&#10005;' : '&#9633;&#215;';
       elements.deletePolygonBtn.title = deletePolygonMode ? 'Stop delete polygon' : 'Delete polygon';
       elements.deletePolygonBtn.classList.toggle('red', deletePolygonMode);
       elements.deletePolygonBtn.classList.toggle('secondary', !deletePolygonMode);
+      elements.deletePolygonBtn.classList.toggle('tool-active', deletePolygonMode);
 
       elements.deleteLineBtn.innerHTML = deleteLineMode ? '&#10005;' : '&#9473;&#215;';
       elements.deleteLineBtn.title = deleteLineMode ? 'Stop delete line' : 'Delete line';
       elements.deleteLineBtn.classList.toggle('red', deleteLineMode);
       elements.deleteLineBtn.classList.toggle('secondary', !deleteLineMode);
+      elements.deleteLineBtn.classList.toggle('tool-active', deleteLineMode);
 
       elements.deletePointBtn.innerHTML = deletePointMode ? '&#10005;' : '&#8226;&#215;';
       elements.deletePointBtn.title = deletePointMode ? 'Stop delete point' : 'Delete point';
       elements.deletePointBtn.classList.toggle('red', deletePointMode);
       elements.deletePointBtn.classList.toggle('secondary', !deletePointMode);
+      elements.deletePointBtn.classList.toggle('tool-active', deletePointMode);
+
+      elements.areaUnitFloatBtn.classList.toggle('tool-active', floatingUnitPanelMode === 'area' && !elements.floatingUnitPanel.hidden);
+      elements.lengthUnitFloatBtn.classList.toggle('tool-active', floatingUnitPanelMode === 'length' && !elements.floatingUnitPanel.hidden);
     }
 
     function closeFmbDialog() {
@@ -2067,7 +2253,7 @@
       marker.bindTooltip(escapeHtml(finalPoint.name), {
         permanent: true,
         direction: 'right',
-        offset: [8, -2],
+        offset: [6, -2],
         className: 'point-label',
         opacity: 1
       });
@@ -2083,6 +2269,11 @@
           marker.closePopup();
           map.closePopup();
           selectForTriangulation(finalPoint.id);
+        } else if (splitByPointsMode) {
+          L.DomEvent.stop(event);
+          marker.closePopup();
+          map.closePopup();
+          selectForSplitByPoints(finalPoint.id);
         } else if (joinMode) {
           L.DomEvent.stop(event);
           marker.closePopup();
@@ -2137,10 +2328,30 @@
       requestTriangulationDistances();
     }
 
+    function selectForSplitByPoints(pointId) {
+      if (!splitByPointsMode) return;
+      if (splitByPointsSelection.includes(pointId)) {
+        splitByPointsSelection = splitByPointsSelection.filter(id => id !== pointId);
+        renderAll();
+        setNotice(elements.polygonNotice, 'Point deselected. Click two boundary points to split.', '');
+        return;
+      }
+
+      splitByPointsSelection.push(pointId);
+      renderAll();
+      if (splitByPointsSelection.length < 2) {
+        setNotice(elements.polygonNotice, 'First boundary point selected. Click the second boundary point.', 'good');
+        return;
+      }
+
+      splitPolygonWithSelectedBoundaryPoints();
+    }
+
     function toggleJoinMode() {
       joinMode = !joinMode;
       if (joinMode) {
         resetSplitMode();
+        resetSplitByPointsMode();
         resetMergeMode();
         resetTriangulationMode();
         resetOffsetMode();
@@ -2162,6 +2373,7 @@
 
       splitMode = !splitMode;
       if (splitMode) {
+        resetSplitByPointsMode();
         resetMergeMode();
         resetTriangulationMode();
         resetOffsetMode();
@@ -2188,6 +2400,45 @@
       updateModeButtons();
       elements.splitPolygonBtn.classList.remove('amber');
       elements.splitPolygonBtn.classList.add('secondary');
+    }
+
+    function toggleSplitByPointsMode() {
+      if (splitByPointsMode) {
+        resetSplitByPointsMode();
+        renderAll();
+        setNotice(elements.polygonNotice, 'Split with points stopped.', '');
+        return;
+      }
+
+      if (!getPolygonListItems().length) {
+        setNotice(elements.polygonNotice, 'There is no polygon drawn on the map.', 'error');
+        return;
+      }
+      if (state.points.length < 2) {
+        setNotice(elements.polygonNotice, 'Add at least two points before using split with points.', 'error');
+        return;
+      }
+
+      resetSplitMode();
+      resetMergeMode();
+      resetTriangulationMode();
+      resetOffsetMode();
+      resetDeleteModes();
+      joinMode = false;
+      elements.startJoinBtn.classList.remove('red');
+      elements.startJoinBtn.classList.add('amber');
+      elements.joinBanner.classList.remove('active');
+      splitByPointsMode = true;
+      splitByPointsSelection = [];
+      updateModeButtons();
+      renderAll();
+      setNotice(elements.polygonNotice, 'Split with points: click two points lying on the polygon boundary.', 'good');
+    }
+
+    function resetSplitByPointsMode() {
+      splitByPointsMode = false;
+      splitByPointsSelection = [];
+      updateModeButtons();
     }
 
     function splitPolygon(part) {
@@ -2463,6 +2714,7 @@
       }
 
       resetSplitMode();
+      resetSplitByPointsMode();
       resetTriangulationMode();
       resetOffsetMode();
       resetDeleteModes();
@@ -2504,6 +2756,7 @@
       }
 
       resetSplitMode();
+      resetSplitByPointsMode();
       resetMergeMode();
       resetOffsetMode();
       resetDeleteModes();
@@ -2676,6 +2929,7 @@
       }
 
       resetSplitMode();
+      resetSplitByPointsMode();
       resetMergeMode();
       resetTriangulationMode();
       resetDeleteModes();
@@ -2728,6 +2982,7 @@
 
     function prepareMapDeleteMode() {
       resetSplitMode();
+      resetSplitByPointsMode();
       resetMergeMode();
       resetTriangulationMode();
       resetOffsetMode();
@@ -3500,6 +3755,10 @@
         splitPolygon(null);
         return;
       }
+      if (splitByPointsMode) {
+        setNotice(elements.polygonNotice, 'Click two boundary points to split this polygon.', 'good');
+        return;
+      }
       askForPolygonName(null);
       renderAll();
     }
@@ -3721,6 +3980,261 @@
       map.fitBounds(polygonLayer.getBounds(), { padding: [40, 40] });
       setNotice(elements.polygonNotice, `Polygon split from ${edgeLabel} using an extent of ${extent} ${unitLabel}.`, 'good');
       renderAll();
+    }
+
+    function splitPolygonWithSelectedBoundaryPoints() {
+      const selected = splitByPointsSelection
+        .map(id => state.points.find(point => point.id === id))
+        .filter(Boolean)
+        .slice(0, 2);
+
+      if (selected.length < 2) return;
+
+      const candidate = findBoundaryPointSplitCandidate(selected[0], selected[1]);
+      if (!candidate || !candidate.parts) {
+        const message = candidate && candidate.error
+          ? candidate.error
+          : 'Selected points must lie on the same polygon boundary.';
+        splitByPointsSelection = [];
+        renderAll();
+        setNotice(elements.polygonNotice, message, 'error');
+        return;
+      }
+
+      applyBoundaryPointSplit(candidate.item, candidate.parts, selected[0], selected[1]);
+    }
+
+    function findBoundaryPointSplitCandidate(firstPoint, secondPoint) {
+      const activePolygonId = state.activePolygonId;
+      const items = getPolygonListItems()
+        .slice()
+        .sort((a, b) => Number(b.polygon.id === activePolygonId) - Number(a.polygon.id === activePolygonId));
+      let lastError = '';
+
+      for (const item of items) {
+        const result = splitPolygonByBoundaryPoints(getPolygonItemPoints(item), firstPoint, secondPoint);
+        if (result && result.parts) return { item, parts: result.parts };
+        if (result && result.error) lastError = result.error;
+      }
+
+      return { error: lastError || 'Selected points must lie on the same polygon boundary.' };
+    }
+
+    function applyBoundaryPointSplit(item, partPointSets, firstPoint, secondPoint) {
+      const parentPolygon = item.polygon;
+      const details = getPolygonItemDetails(item);
+      const newParts = partPointSets.map(partPoints => ({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        parentPolygonId: parentPolygon.id,
+        points: partPoints,
+        name: details.name,
+        kathaNo: details.kathaNo,
+        surveyNo: details.surveyNo,
+        remarks: details.remarks,
+        areaSqM: calculateSphericalArea(partPoints),
+        layer: null,
+        areaLabel: null,
+        detailsLabel: null,
+        distanceLabels: []
+      }));
+
+      recordHistory();
+      setActivePolygon(parentPolygon);
+
+      if (item.type === 'part') {
+        removeSplitPartLayers(item.part, parentPolygon);
+        parentPolygon.splitParts = parentPolygon.splitParts.filter(part => part.id !== item.part.id);
+      } else {
+        clearPolygonDistanceLabels(parentPolygon);
+        if (parentPolygon.layer) map.removeLayer(parentPolygon.layer);
+        if (parentPolygon.areaLabel) map.removeLayer(parentPolygon.areaLabel);
+        if (parentPolygon.detailsLabel) map.removeLayer(parentPolygon.detailsLabel);
+        parentPolygon.layer = L.featureGroup().addTo(map);
+        parentPolygon.areaLabel = null;
+        parentPolygon.detailsLabel = null;
+        parentPolygon.splitParts = [];
+      }
+
+      parentPolygon.splitParts.push(...newParts);
+      parentPolygon.areaSqM = parentPolygon.splitParts.reduce((total, part) => total + part.areaSqM, 0);
+      setActivePolygon(parentPolygon);
+      state.splitParts.forEach((part, index) => {
+        if (!part.layer) renderSplitPart(part, index);
+      });
+      state.areaSqM = parentPolygon.areaSqM;
+      syncActivePolygonState();
+      updateAreaDisplay();
+      resetSplitByPointsMode();
+      renderAll();
+      if (polygonLayer && polygonLayer.getBounds && polygonLayer.getLayers().length) {
+        map.fitBounds(polygonLayer.getBounds(), { padding: [40, 40] });
+      }
+      setNotice(elements.polygonNotice, `Polygon split using ${firstPoint.name || 'Point 1'} and ${secondPoint.name || 'Point 2'}.`, 'good');
+    }
+
+    function splitPolygonByBoundaryPoints(points, firstPoint, secondPoint) {
+      if (!points || points.length < 3) return { error: 'Polygon must have at least three points.' };
+      const projection = createLocalProjection([...points, firstPoint, secondPoint]);
+      const projectedRing = points.map((point, index) => {
+        const projected = projection.project(point);
+        return {
+          ...projected,
+          index,
+          point: copyPolygonPoint(point, index)
+        };
+      });
+      const firstCut = locateBoundaryCut(projectedRing, firstPoint, projection);
+      const secondCut = locateBoundaryCut(projectedRing, secondPoint, projection);
+
+      if (!firstCut || !secondCut) return { error: 'Both selected points must lie on the polygon boundary.' };
+      if (map.distance([firstCut.point.lat, firstCut.point.lon], [secondCut.point.lat, secondCut.point.lon]) <= 0.05) {
+        return { error: 'Select two different boundary points.' };
+      }
+      if (firstCut.edgeIndex === secondCut.edgeIndex) {
+        return { error: 'Choose points on different boundary lines to create a split.' };
+      }
+
+      const ringData = buildBoundarySplitRing(points, [firstCut, secondCut]);
+      const firstIndex = ringData.cutIndices[0];
+      const secondIndex = ringData.cutIndices[1];
+      if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
+        return { error: 'Selected boundary points could not be inserted into the polygon.' };
+      }
+
+      const firstPart = cleanPolygonRing(buildBoundaryPath(ringData.ring, firstIndex, secondIndex));
+      const secondPart = cleanPolygonRing(buildBoundaryPath(ringData.ring, secondIndex, firstIndex));
+      if (firstPart.length < 3 || secondPart.length < 3) {
+        return { error: 'Selected points do not create two valid polygon parts.' };
+      }
+      if (calculateSphericalArea(firstPart) < 0.01 || calculateSphericalArea(secondPart) < 0.01) {
+        return { error: 'Selected points do not create two valid polygon parts.' };
+      }
+
+      return { parts: [firstPart, secondPart] };
+    }
+
+    function locateBoundaryCut(projectedRing, selectedPoint, projection) {
+      const selectedProjected = projection.project(selectedPoint);
+      const toleranceMeters = 1;
+      const vertexMatch = projectedRing.find(vertex =>
+        isSameLineEndpoint(vertex.point, selectedPoint)
+        || Math.hypot(vertex.x - selectedProjected.x, vertex.y - selectedProjected.y) <= toleranceMeters
+      );
+      if (vertexMatch) {
+        return {
+          edgeIndex: vertexMatch.index,
+          t: 0,
+          point: createSnappedBoundaryPoint(selectedPoint, vertexMatch, projection)
+        };
+      }
+
+      let best = null;
+      for (let index = 0; index < projectedRing.length; index++) {
+        const start = projectedRing[index];
+        const end = projectedRing[(index + 1) % projectedRing.length];
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const lengthSq = dx * dx + dy * dy;
+        if (lengthSq <= 0.000001) continue;
+        const rawT = ((selectedProjected.x - start.x) * dx + (selectedProjected.y - start.y) * dy) / lengthSq;
+        if (rawT < -0.000001 || rawT > 1.000001) continue;
+        const t = Math.max(0, Math.min(1, rawT));
+        const snapped = {
+          x: start.x + dx * t,
+          y: start.y + dy * t
+        };
+        const distance = Math.hypot(selectedProjected.x - snapped.x, selectedProjected.y - snapped.y);
+        if (!best || distance < best.distance) {
+          best = { edgeIndex: index, t, snapped, distance };
+        }
+      }
+
+      if (!best || best.distance > toleranceMeters) return null;
+      if (best.t >= 0.999999) {
+        const nextVertex = projectedRing[(best.edgeIndex + 1) % projectedRing.length];
+        return {
+          edgeIndex: nextVertex.index,
+          t: 0,
+          point: createSnappedBoundaryPoint(selectedPoint, nextVertex, projection)
+        };
+      }
+      if (best.t <= 0.000001) {
+        const vertex = projectedRing[best.edgeIndex];
+        return {
+          edgeIndex: vertex.index,
+          t: 0,
+          point: createSnappedBoundaryPoint(selectedPoint, vertex, projection)
+        };
+      }
+      return {
+        edgeIndex: best.edgeIndex,
+        t: best.t,
+        point: createSnappedBoundaryPoint(selectedPoint, best.snapped, projection)
+      };
+    }
+
+    function createSnappedBoundaryPoint(sourcePoint, projectedPoint, projection) {
+      const snapped = projection.unproject(projectedPoint);
+      return {
+        ...copyPolygonPoint(sourcePoint),
+        lat: snapped.lat,
+        lon: snapped.lon
+      };
+    }
+
+    function buildBoundarySplitRing(points, cuts) {
+      const cutItems = cuts.map((cut, index) => ({ ...cut, cutIndex: index, ringIndex: -1 }));
+      const ring = [];
+      const vertexTolerance = 0.000001;
+
+      points.forEach((point, index) => {
+        ring.push(copyPolygonPoint(point, index));
+        cutItems
+          .filter(cut => cut.edgeIndex === index && cut.t <= vertexTolerance)
+          .forEach(cut => {
+            ring[ring.length - 1] = cut.point;
+            cut.ringIndex = ring.length - 1;
+          });
+        cutItems
+          .filter(cut => cut.edgeIndex === index && cut.t > vertexTolerance)
+          .sort((a, b) => a.t - b.t)
+          .forEach(cut => {
+            ring.push(cut.point);
+            cut.ringIndex = ring.length - 1;
+          });
+      });
+
+      return {
+        ring,
+        cutIndices: cutItems.map(cut => cut.ringIndex)
+      };
+    }
+
+    function buildBoundaryPath(ring, startIndex, endIndex) {
+      const path = [];
+      let index = startIndex;
+      for (let count = 0; count <= ring.length; count++) {
+        path.push(copyPolygonPoint(ring[index], index));
+        if (index === endIndex) break;
+        index = (index + 1) % ring.length;
+      }
+      return path;
+    }
+
+    function cleanPolygonRing(points) {
+      const cleaned = [];
+      points.forEach(point => {
+        const previous = cleaned[cleaned.length - 1];
+        if (!previous || map.distance([previous.lat, previous.lon], [point.lat, point.lon]) > 0.02) {
+          cleaned.push(point);
+        }
+      });
+      if (cleaned.length > 1) {
+        const first = cleaned[0];
+        const last = cleaned[cleaned.length - 1];
+        if (map.distance([first.lat, first.lon], [last.lat, last.lon]) <= 0.02) cleaned.pop();
+      }
+      return cleaned;
     }
 
     function splitPolygonByTargetArea(points, edgeIndex, targetAreaSqM) {
@@ -4046,6 +4560,7 @@
       state.points = [];
       state.joinOrder = [];
       resetSplitMode();
+      resetSplitByPointsMode();
       resetTriangulationMode();
       resetOffsetMode();
       resetDeleteModes();
@@ -4057,6 +4572,12 @@
       clearFmbLines();
       renderAll();
       setNotice(elements.polygonNotice, 'All points and polygon data cleared.', '');
+    }
+
+    function confirmResetMap() {
+      if (!confirm('Reset the entire map?\n\nOK = YES, Cancel = NO')) return;
+      clearAll();
+      setNotice(elements.polygonNotice, 'Map reset completed.', 'good');
     }
 
     function updateJoinPreview() {
@@ -4171,8 +4692,9 @@
       state.points.forEach((point, index) => {
         const selectedIndex = state.joinOrder.indexOf(point.id);
         const triangulationIndex = triangulationSelection.indexOf(point.id);
-        const isSelected = selectedIndex >= 0 || triangulationIndex >= 0;
-        const badgeText = selectedIndex >= 0 ? selectedIndex + 1 : triangulationIndex >= 0 ? triangulationIndex + 1 : index + 1;
+        const splitByPointsIndex = splitByPointsSelection.indexOf(point.id);
+        const isSelected = selectedIndex >= 0 || triangulationIndex >= 0 || splitByPointsIndex >= 0;
+        const badgeText = selectedIndex >= 0 ? selectedIndex + 1 : triangulationIndex >= 0 ? triangulationIndex + 1 : splitByPointsIndex >= 0 ? splitByPointsIndex + 1 : index + 1;
         const card = document.createElement('div');
         card.className = `point-card${isSelected ? ' selected' : ''}`;
         card.innerHTML = `
@@ -4190,6 +4712,8 @@
             refreshDeletePointTargets();
           } else if (triangulationMode) {
             selectForTriangulation(point.id);
+          } else if (splitByPointsMode) {
+            selectForSplitByPoints(point.id);
           } else if (joinMode) {
             selectForJoin(point.id);
           } else {
@@ -4207,12 +4731,13 @@
       state.points.forEach(point => {
         const selectedIndex = state.joinOrder.indexOf(point.id);
         const triangulationIndex = triangulationSelection.indexOf(point.id);
-        const isSelected = selectedIndex >= 0 || triangulationIndex >= 0;
+        const splitByPointsIndex = splitByPointsSelection.indexOf(point.id);
+        const isSelected = selectedIndex >= 0 || triangulationIndex >= 0 || splitByPointsIndex >= 0;
         const markerElement = point.marker.getElement();
         if (markerElement) markerElement.classList.toggle('join-selected-marker', isSelected);
         if (markerElement) markerElement.classList.toggle('delete-target-marker', deletePointMode);
-        point.marker.setZIndexOffset(isSelected || deletePointMode ? 1000 + Math.max(selectedIndex, triangulationIndex, 0) : 0);
-        if (joinMode || triangulationMode || deletePointMode) {
+        point.marker.setZIndexOffset(isSelected || deletePointMode ? 1000 + Math.max(selectedIndex, triangulationIndex, splitByPointsIndex, 0) : 0);
+        if (joinMode || triangulationMode || splitByPointsMode || deletePointMode) {
           point.marker.closePopup();
           point.marker.unbindPopup();
         } else if (point.marker.getPopup()) {
@@ -4235,6 +4760,7 @@
       state.points = state.points.filter(item => item.id !== pointId);
       state.joinOrder = state.joinOrder.filter(id => id !== pointId);
       triangulationSelection = triangulationSelection.filter(id => id !== pointId);
+      splitByPointsSelection = splitByPointsSelection.filter(id => id !== pointId);
       const polygonUpdate = removePointFromStoredPolygons(point);
       updateJoinPreview();
       renderAll();
@@ -5027,6 +5553,10 @@ EOF
       }
       if (splitMode) {
         splitPolygon(part);
+        return;
+      }
+      if (splitByPointsMode) {
+        setNotice(elements.polygonNotice, 'Click two boundary points to split this polygon part.', 'good');
         return;
       }
       askForPolygonName(part);
