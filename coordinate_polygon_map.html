@@ -2650,7 +2650,7 @@
     }
 
     function refreshStoredPolygonGeometry(polygon) {
-      polygon.areaSqM = calculateSphericalArea(polygon.points);
+      polygon.areaSqM = calculateProjectedArea(polygon.points);
       if (polygon.layer && polygon.layer.setLatLngs) polygon.layer.setLatLngs(polygon.points.map(point => [point.lat, point.lon]));
       if (polygon.areaLabel) {
         polygon.areaLabel
@@ -2662,7 +2662,7 @@
     }
 
     function refreshSplitPartGeometry(part, parentPolygon) {
-      part.areaSqM = calculateSphericalArea(part.points);
+      part.areaSqM = calculateProjectedArea(part.points);
       if (part.layer && part.layer.setLatLngs) part.layer.setLatLngs(part.points.map(point => [point.lat, point.lon]));
       if (part.areaLabel) {
         part.areaLabel
@@ -3696,7 +3696,7 @@
 
     function createStoredPolygonFromPoints(points, details = {}) {
       const polygonPoints = points.map((point, index) => copyPolygonPoint(point, index));
-      const areaSqM = calculateSphericalArea(polygonPoints);
+      const areaSqM = calculateProjectedArea(polygonPoints);
       const polygonCenter = getPolygonCenter(polygonPoints);
       const polygon = {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
@@ -3943,7 +3943,7 @@
         kathaNo: details.kathaNo,
         surveyNo: details.surveyNo,
         remarks: details.remarks,
-        areaSqM: calculateSphericalArea(partPoints),
+        areaSqM: calculateProjectedArea(partPoints),
         layer: null,
         areaLabel: null,
         detailsLabel: null,
@@ -4031,7 +4031,7 @@
         kathaNo: details.kathaNo,
         surveyNo: details.surveyNo,
         remarks: details.remarks,
-        areaSqM: calculateSphericalArea(partPoints),
+        areaSqM: calculateProjectedArea(partPoints),
         layer: null,
         areaLabel: null,
         detailsLabel: null,
@@ -4106,7 +4106,7 @@
       if (firstPart.length < 3 || secondPart.length < 3) {
         return { error: 'Selected points do not create two valid polygon parts.' };
       }
-      if (calculateSphericalArea(firstPart) < 0.01 || calculateSphericalArea(secondPart) < 0.01) {
+      if (calculateProjectedArea(firstPart) < 0.01 || calculateProjectedArea(secondPart) < 0.01) {
         return { error: 'Selected points do not create two valid polygon parts.' };
       }
 
@@ -4274,7 +4274,7 @@
           continue;
         }
 
-        const nearEdgeArea = calculateSphericalArea(result[1]);
+        const nearEdgeArea = calculateProjectedArea(result[1]);
         const difference = Math.abs(nearEdgeArea - targetAreaSqM);
         if (difference < bestDifference) {
           bestDifference = difference;
@@ -4330,7 +4330,7 @@
       const firstPart = convertSplitRing(inwardRing, projection, projected, generatedNames, assignNames);
       const secondPart = convertSplitRing(outwardRing, projection, projected, generatedNames, assignNames);
       if (firstPart.length < 3 || secondPart.length < 3) return null;
-      if (calculateSphericalArea(firstPart) < 0.01 || calculateSphericalArea(secondPart) < 0.01) return null;
+      if (calculateProjectedArea(firstPart) < 0.01 || calculateProjectedArea(secondPart) < 0.01) return null;
       return [firstPart, secondPart];
     }
 
@@ -4480,7 +4480,7 @@
       const selected = getJoinedPoints();
       const polygonPoints = selected.map((point, index) => copyPolygonPoint(point, index));
       const latLngs = polygonPoints.map(point => [point.lat, point.lon]);
-      const areaSqM = calculateSphericalArea(polygonPoints);
+      const areaSqM = calculateProjectedArea(polygonPoints);
       const polygonCenter = getPolygonCenter(polygonPoints);
       const polygon = {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
@@ -5519,19 +5519,38 @@ EOF
       };
     }
 
-    function calculateSphericalArea(points) {
-      const radius = 6378137;
+    function calculateProjectedArea(points) {
+      if (!Array.isArray(points) || points.length < 3) return 0;
+
+      const firstPoint = points.find(point => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lon)));
+      if (!firstPoint) return 0;
+
+      // Keep every vertex in one UTM plane, matching the survey and QGIS calculation.
+      const zone = Number(firstPoint.zone) || Math.floor((Number(firstPoint.lon) + 180) / 6) + 1;
+      const hemisphere = String(firstPoint.hemisphere || (Number(firstPoint.lat) < 0 ? 'S' : 'N')).toUpperCase();
+      const coordinates = points.map(point => {
+        const pointZone = Number(point.zone) || zone;
+        const pointHemisphere = String(point.hemisphere || hemisphere).toUpperCase();
+        const hasSurveyCoordinate = looksLikeEasting(Number(point.easting))
+          && looksLikeNorthing(Number(point.northing))
+          && pointZone === zone
+          && pointHemisphere === hemisphere;
+
+        if (hasSurveyCoordinate) return { x: Number(point.easting), y: Number(point.northing) };
+
+        const projected = latLonToUtm(point.lat, point.lon, zone, hemisphere);
+        return { x: projected.easting, y: projected.northing };
+      });
+
+      if (coordinates.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y))) return 0;
+
       let total = 0;
-      for (let index = 0; index < points.length; index++) {
-        const current = points[index];
-        const next = points[(index + 1) % points.length];
-        const lon1 = current.lon * Math.PI / 180;
-        const lon2 = next.lon * Math.PI / 180;
-        const lat1 = current.lat * Math.PI / 180;
-        const lat2 = next.lat * Math.PI / 180;
-        total += (lon2 - lon1) * (2 + Math.sin(lat1) + Math.sin(lat2));
+      for (let index = 0; index < coordinates.length; index++) {
+        const current = coordinates[index];
+        const next = coordinates[(index + 1) % coordinates.length];
+        total += current.x * next.y - next.x * current.y;
       }
-      return Math.abs(total * radius * radius / 2);
+      return Math.abs(total) / 2;
     }
 
     function handlePolygonClick(part, event) {
