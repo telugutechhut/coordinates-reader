@@ -1247,7 +1247,7 @@
           <option value="feet">Feet</option>
         </select>
       </div>
-      <div id="joinBanner" class="join-banner">Join mode is active. Click points in the exact polygon order.</div>
+      <div id="joinBanner" class="join-banner" role="status" aria-live="polite">Join points: click boundary points in the exact polygon order.</div>
     </section>
   </main>
 
@@ -1781,62 +1781,81 @@
 
     function updateModeButtons() {
       elements.startJoinBtn.innerHTML = joinMode ? '&#9632;' : '&#9633;';
-      elements.startJoinBtn.title = joinMode ? 'Stop polygon join mode' : 'Polygon join mode';
+      elements.startJoinBtn.title = joinMode ? 'Stop joining points' : 'Join points to draw a polygon';
       elements.startJoinBtn.classList.toggle('red', joinMode);
       elements.startJoinBtn.classList.toggle('amber', !joinMode);
       elements.startJoinBtn.classList.toggle('tool-active', joinMode);
       elements.joinBanner.classList.toggle('active', joinMode);
 
       elements.splitPolygonBtn.innerHTML = splitMode ? '&#10005;' : '&#9986;';
-      elements.splitPolygonBtn.title = splitMode ? 'Stop split mode' : 'Split polygon';
+      elements.splitPolygonBtn.title = splitMode ? 'Stop splitting polygon' : 'Split polygon by selected boundary line and area';
       elements.splitPolygonBtn.classList.toggle('amber', splitMode);
       elements.splitPolygonBtn.classList.toggle('secondary', !splitMode);
       elements.splitPolygonBtn.classList.toggle('tool-active', splitMode);
 
       elements.splitByPointsBtn.innerHTML = splitByPointsMode ? '&#10005;' : '&#8226;&#9473;&#8226;';
-      elements.splitByPointsBtn.title = splitByPointsMode ? 'Stop split with points' : 'Split with points';
+      elements.splitByPointsBtn.title = splitByPointsMode ? 'Stop split with points' : 'Split polygon using two boundary points';
       elements.splitByPointsBtn.classList.toggle('amber', splitByPointsMode);
       elements.splitByPointsBtn.classList.toggle('secondary', !splitByPointsMode);
       elements.splitByPointsBtn.classList.toggle('tool-active', splitByPointsMode);
 
       elements.mergePolygonBtn.innerHTML = '&#8644;';
-      elements.mergePolygonBtn.title = mergeMode ? 'Merge selected polygons' : 'Merge polygons';
+      elements.mergePolygonBtn.title = mergeMode ? 'Merge selected polygons' : 'Merge two or more touching polygons';
       elements.mergePolygonBtn.classList.toggle('amber', mergeMode);
       elements.mergePolygonBtn.classList.toggle('secondary', !mergeMode);
       elements.mergePolygonBtn.classList.toggle('tool-active', mergeMode);
 
       elements.triangulationBtn.innerHTML = triangulationMode ? '&#10005;' : '&#9651;';
-      elements.triangulationBtn.title = triangulationMode ? 'Stop triangulation' : 'Triangulation';
+      elements.triangulationBtn.title = triangulationMode ? 'Stop triangulation' : 'Create a point from two reference distances';
       elements.triangulationBtn.classList.toggle('amber', triangulationMode);
       elements.triangulationBtn.classList.toggle('secondary', !triangulationMode);
       elements.triangulationBtn.classList.toggle('tool-active', triangulationMode);
 
       elements.offsetBtn.innerHTML = offsetMode ? '&#10005;' : '&#8869;';
-      elements.offsetBtn.title = offsetMode ? 'Stop offset' : 'Offset';
+      elements.offsetBtn.title = offsetMode ? 'Stop offset' : 'Create a point at an offset from a line';
       elements.offsetBtn.classList.toggle('amber', offsetMode);
       elements.offsetBtn.classList.toggle('secondary', !offsetMode);
       elements.offsetBtn.classList.toggle('tool-active', offsetMode);
 
       elements.deletePolygonBtn.innerHTML = deletePolygonMode ? '&#10005;' : '&#9633;&#215;';
-      elements.deletePolygonBtn.title = deletePolygonMode ? 'Stop delete polygon' : 'Delete polygon';
+      elements.deletePolygonBtn.title = deletePolygonMode ? 'Stop deleting polygons' : 'Delete a selected polygon';
       elements.deletePolygonBtn.classList.toggle('red', deletePolygonMode);
       elements.deletePolygonBtn.classList.toggle('secondary', !deletePolygonMode);
       elements.deletePolygonBtn.classList.toggle('tool-active', deletePolygonMode);
 
       elements.deleteLineBtn.innerHTML = deleteLineMode ? '&#10005;' : '&#9473;&#215;';
-      elements.deleteLineBtn.title = deleteLineMode ? 'Stop delete line' : 'Delete line';
+      elements.deleteLineBtn.title = deleteLineMode ? 'Stop deleting lines' : 'Delete a selected construction line';
       elements.deleteLineBtn.classList.toggle('red', deleteLineMode);
       elements.deleteLineBtn.classList.toggle('secondary', !deleteLineMode);
       elements.deleteLineBtn.classList.toggle('tool-active', deleteLineMode);
 
       elements.deletePointBtn.innerHTML = deletePointMode ? '&#10005;' : '&#8226;&#215;';
-      elements.deletePointBtn.title = deletePointMode ? 'Stop delete point' : 'Delete point';
+      elements.deletePointBtn.title = deletePointMode ? 'Stop deleting points' : 'Delete a selected point';
       elements.deletePointBtn.classList.toggle('red', deletePointMode);
       elements.deletePointBtn.classList.toggle('secondary', !deletePointMode);
       elements.deletePointBtn.classList.toggle('tool-active', deletePointMode);
 
       elements.areaUnitFloatBtn.classList.toggle('tool-active', floatingUnitPanelMode === 'area' && !elements.floatingUnitPanel.hidden);
       elements.lengthUnitFloatBtn.classList.toggle('tool-active', floatingUnitPanelMode === 'length' && !elements.floatingUnitPanel.hidden);
+      setMapToolGuide(getActiveToolGuide());
+    }
+
+    function getActiveToolGuide() {
+      if (joinMode) return 'Join points: click boundary points one by one in order. Click the first point again to close the polygon.';
+      if (splitMode) return 'Split polygon: click a highlighted boundary line, then enter the area for one part.';
+      if (splitByPointsMode) return 'Split with points: click two points that lie on the polygon boundary.';
+      if (mergeMode) return 'Merge polygons: click two or more touching polygons, then click Merge again.';
+      if (triangulationMode) return 'Triangulation: click two existing reference points, then enter the distance from each point.';
+      if (offsetMode) return 'Offset: click a highlighted line, choose the from point, then enter cut and perpendicular distances.';
+      if (deletePolygonMode) return 'Delete polygon: click a highlighted polygon to remove it.';
+      if (deleteLineMode) return 'Delete line: click a highlighted construction line to remove it.';
+      if (deletePointMode) return 'Delete point: click a highlighted point to remove it.';
+      return '';
+    }
+
+    function setMapToolGuide(message) {
+      elements.joinBanner.textContent = message || 'Join points: click boundary points in the exact polygon order.';
+      elements.joinBanner.classList.toggle('active', Boolean(message));
     }
 
     function closeFmbDialog() {
@@ -2313,6 +2332,7 @@
         recordHistory();
         triangulationSelection = triangulationSelection.filter(id => id !== pointId);
         renderAll();
+        setMapToolGuide('Triangulation: click two existing reference points. Then enter the two distances.');
         setNotice(elements.polygonNotice, 'Triangulation mode: click two existing points.', '');
         return;
       }
@@ -2321,6 +2341,7 @@
       triangulationSelection.push(pointId);
       renderAll();
       if (triangulationSelection.length < 2) {
+        setMapToolGuide('Triangulation: first reference point selected. Click the second reference point.');
         setNotice(elements.polygonNotice, 'First point selected. Click the second point for triangulation.', 'good');
         return;
       }
@@ -2333,6 +2354,7 @@
       if (splitByPointsSelection.includes(pointId)) {
         splitByPointsSelection = splitByPointsSelection.filter(id => id !== pointId);
         renderAll();
+        setMapToolGuide('Split with points: click two points that lie on the polygon boundary.');
         setNotice(elements.polygonNotice, 'Point deselected. Click two boundary points to split.', '');
         return;
       }
@@ -2340,6 +2362,7 @@
       splitByPointsSelection.push(pointId);
       renderAll();
       if (splitByPointsSelection.length < 2) {
+        setMapToolGuide('Split with points: first boundary point selected. Click the second boundary point.');
         setNotice(elements.polygonNotice, 'First boundary point selected. Click the second boundary point.', 'good');
         return;
       }
